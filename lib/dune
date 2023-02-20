@@ -1,4 +1,0 @@
-(library
- (name oopenai)
- (libraries http-lwt-client
-            yojson))
