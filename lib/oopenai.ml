@@ -1,1 +1,3 @@
-let v = "freda" ^ "<>"
+module Internal = struct
+  module Service = Service
+end
