@@ -1,0 +1,29 @@
+(lang dune 2.9)
+; (lang dune 1.10)
+(name oopenai)
+(cram enable)
+(generate_opam_files true)
+
+(license MIT)
+(authors "Shon Feder")
+(maintainers "Shon Feder")
+(source (github shonfeder/oopenai))
+
+(package
+ (name oopenai)
+ (synopsis "Short description")
+ (description "Longer description")
+ (depends
+  (dune (> 2.9))
+  (ocaml (>= 5.0))
+
+  ppx_deriving_yojson
+  cohttp
+  ppx_deriving
+  cohttp-lwt-unix
+  ocaml-migrate-parsetree
+
+  (ppx_expect (and :with-test (>= v0.15.1)))
+  (alcotest :with-test)
+  (qcheck :with-test)
+  (qcheck-alcotest :with-test)))
