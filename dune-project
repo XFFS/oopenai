@@ -15,7 +15,12 @@
  (depends
   (dune (> 2.9))
   (ocaml (>= 5.0))
+
+  (http-lwt-client (>= 0.2.1))
+  (yojson (>= 2.0.2))
+
+  (ppx_expect (and :wit-test (>= v0.15.1)))
   (alcotest :with-test)
   (qcheck :with-test)
   (qcheck-alcotest :with-test)
-))
+  ))

@@ -1,2 +1,5 @@
-(test
- (name oopenai))
+(library
+ (name tests)
+ (libraries oopenai lwt.unix)
+ (inline_tests)
+ (preprocess (pps ppx_expect)))
