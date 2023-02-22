@@ -13,22 +13,6 @@ let cancel_fine_tune ~fine_tune_id =
     Cohttp_lwt_unix.Client.call `POST uri ~headers >>= fun (resp, body) ->
     Request.read_json_body_as (JsonSupport.unwrap Fine_tune.of_yojson) resp body
 
-let create_answer ~create_answer_request_t =
-    let open Lwt.Infix in
-    let uri = Request.build_uri "/answers" in
-    let headers = Request.default_headers in
-    let body = Request.write_as_json_body Create_answer_request.to_yojson create_answer_request_t in
-    Cohttp_lwt_unix.Client.call `POST uri ~headers ~body >>= fun (resp, body) ->
-    Request.read_json_body_as (JsonSupport.unwrap Create_answer_response.of_yojson) resp body
-
-let create_classification ~create_classification_request_t =
-    let open Lwt.Infix in
-    let uri = Request.build_uri "/classifications" in
-    let headers = Request.default_headers in
-    let body = Request.write_as_json_body Create_classification_request.to_yojson create_classification_request_t in
-    Cohttp_lwt_unix.Client.call `POST uri ~headers ~body >>= fun (resp, body) ->
-    Request.read_json_body_as (JsonSupport.unwrap Create_classification_response.of_yojson) resp body
-
 let create_completion ~create_completion_request_t =
     let open Lwt.Infix in
     let uri = Request.build_uri "/completions" in
@@ -151,13 +135,6 @@ let download_file ~file_id =
     Cohttp_lwt_unix.Client.call `GET uri ~headers >>= fun (resp, body) ->
     Request.read_json_body_as (JsonSupport.to_string) resp body
 
-let list_engines () =
-    let open Lwt.Infix in
-    let uri = Request.build_uri "/engines" in
-    let headers = Request.default_headers in
-    Cohttp_lwt_unix.Client.call `GET uri ~headers >>= fun (resp, body) ->
-    Request.read_json_body_as (JsonSupport.unwrap List_engines_response.of_yojson) resp body
-
 let list_files () =
     let open Lwt.Infix in
     let uri = Request.build_uri "/files" in
@@ -187,14 +164,6 @@ let list_models () =
     let headers = Request.default_headers in
     Cohttp_lwt_unix.Client.call `GET uri ~headers >>= fun (resp, body) ->
     Request.read_json_body_as (JsonSupport.unwrap List_models_response.of_yojson) resp body
-
-let retrieve_engine ~engine_id =
-    let open Lwt.Infix in
-    let uri = Request.build_uri "/engines/{engine_id}" in
-    let headers = Request.default_headers in
-    let uri = Request.replace_path_param uri "engine_id" (fun x -> x) engine_id in
-    Cohttp_lwt_unix.Client.call `GET uri ~headers >>= fun (resp, body) ->
-    Request.read_json_body_as (JsonSupport.unwrap Engine.of_yojson) resp body
 
 let retrieve_file ~file_id =
     let open Lwt.Infix in
