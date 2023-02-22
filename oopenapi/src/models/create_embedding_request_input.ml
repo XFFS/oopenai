@@ -12,7 +12,7 @@
 (** An array of input text to get embeddings for, encoded as an array of strings.
  *  An embedding is returned for each string in the array, and
  *  each input must not exceed 8192 tokens in length.  *)
-type t = string array
+type t = string list
 [@@deriving yojson { strict = false }, show ]
 
 
