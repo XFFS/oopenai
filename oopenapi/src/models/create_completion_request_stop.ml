@@ -6,7 +6,7 @@
  * Schema Create_completion_request_stop.t : Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence. 
  *)
 
-(* The API supports a string or array of strings, the lattes suffices *)
+(* The API supports a string or array of strings, but we can expose all functionality with the latter alone *)
 type t = string list [@@deriving yojson { strict = false }, show ]
 
 (** Up to 4 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.  *)
