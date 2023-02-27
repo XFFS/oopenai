@@ -20,6 +20,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    defaults:
+      run:
+        working-directory: oopenai
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -28,10 +32,6 @@ jobs:
         uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-
-      - run: |
-          pwd
-          ls
 
       - run: opam install . --deps-only --with-test
 
