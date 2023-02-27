@@ -3,6 +3,8 @@ name: Main workflow
 on:
   pull_request:
   push:
+    branches:
+      - "main"
 
 jobs:
   build-and-test:
@@ -27,7 +29,9 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - run: pwd
+      - run: |
+          pwd
+          ls
 
       - run: opam install . --deps-only --with-test
 
