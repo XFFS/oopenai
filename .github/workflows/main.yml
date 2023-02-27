@@ -5,7 +5,7 @@ on:
   push:
 
 jobs:
-  build and test:
+  build-and-test:
     strategy:
       fail-fast: false
       matrix:
