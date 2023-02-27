@@ -14,7 +14,8 @@ jobs:
         os:
           - macos-latest
           - ubuntu-latest
-          - windows-latest
+          # Not supported on ocaml 5 yet
+          # - windows-latest
         ocaml-compiler:
           - 5.x
 
