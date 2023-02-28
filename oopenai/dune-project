@@ -19,8 +19,9 @@
 
   ppx_deriving_yojson
   cohttp
-  ppx_deriving
+  tls
   cohttp-lwt-unix
+  ppx_deriving
   ocaml-migrate-parsetree
 
   (ppx_expect (and :with-test (>= v0.15.1)))

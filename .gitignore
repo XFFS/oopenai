@@ -3,3 +3,5 @@
 _build/
 # Opam switch directory
 _opam/
+# MAC OS 
+.DS_Store
