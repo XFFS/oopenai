@@ -7,7 +7,7 @@
 
  (* TODO Move? *)
 module Config : Request.Auth = struct
-    let api_key = "todo"
+    let api_key = Sys.getenv "OPENAI_API_KEY"
     let org_id = None
 end
 
