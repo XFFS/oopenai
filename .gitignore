@@ -5,3 +5,5 @@ _build/
 _opam/
 # MAC OS 
 .DS_Store
+# Direnv
+.envrc
