@@ -5,6 +5,14 @@
  *
  *)
 
+ (* TODO Move? *)
+module Config : Request.Auth = struct
+    let api_key = "todo"
+    let org_id = None
+end
+
+module Request = Request.Make (Config)
+
 let cancel_fine_tune ~fine_tune_id =
     let open Lwt.Infix in
     let uri = Request.build_uri "/fine-tunes/{fine_tune_id}/cancel" in
