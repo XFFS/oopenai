@@ -7,7 +7,7 @@
 
 type t = {
     id: string;
-    _object: string;
+    _object: string [@key "object"];
     created_at: int32;
     updated_at: int32;
     model: string;
