@@ -1,3 +1,4 @@
 (test
  (name test)
- (libraries oopenai alcotest))
+ (libraries oopenai alcotest alcotest-lwt lwt lwt.unix))
+ 
