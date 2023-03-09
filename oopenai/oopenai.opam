@@ -19,6 +19,7 @@ depends: [
   "ocaml-migrate-parsetree"
   "ppx_expect" {with-test & >= "v0.15.1"}
   "alcotest" {with-test}
+  "alcotest-lwt" {with-test}
   "qcheck" {with-test}
   "qcheck-alcotest" {with-test}
   "odoc" {with-doc}
