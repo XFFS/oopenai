@@ -23,13 +23,27 @@ let tests =
     test "can create_completion" begin
       let create_completion_request_t = 
         let req = Create_completion_request.create "ada" in 
-        let prompt = Some ["Give me dogs"] in
+        let prompt = Some ["Give me dogs"; "Give me some cats"] in
         let n = Some 5l in
         {req with prompt; n}
       in
       let+ resp = API.create_completion ~create_completion_request_t in
-      List.length resp.choices = 5
+      List.length resp.choices = 10
     end;
+
+    test "can create_edit" begin
+      let create_edit_request_t =
+        let req = Create_edit_request.create "text-davinci-edit-001" "Fix the spelling mistakes" in
+        let input = Some "What day of the wek is it?" in 
+        {req with input}
+      in
+      let+ resp = API.create_edit ~create_edit_request_t in 
+      match resp.choices with 
+      | corrected :: _  -> corrected.text != Some "What day of the wek is it?"
+      | [] -> false
+    end;
+
+
 
   ]
 
