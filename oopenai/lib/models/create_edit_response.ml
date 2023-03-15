@@ -6,19 +6,15 @@
  *)
 
 type t = {
-    id: string;
     _object: string [@key "object"];
     created: int32;
-    model: string;
     choices: Create_completion_response_choices_inner.t list;
     usage: Create_completion_response_usage.t;
 } [@@deriving yojson { strict = false }, show ];;
 
 let create (id : string) (_object : string) (created : int32) (model : string) (choices : Create_completion_response_choices_inner.t list) (usage : Create_completion_response_usage.t) : t = {
-    id = id;
     _object = _object;
     created = created;
-    model = model;
     choices = choices;
     usage = usage;
 }
