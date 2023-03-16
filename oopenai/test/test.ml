@@ -57,12 +57,22 @@ let tests =
         Create_moderation_request.create ["I want to kill them or give them cake!"]
       in 
       let+ resp =  API.create_moderation ~create_moderation_request_t in 
-      List.length resp.results = 0
+      List.length resp.results != 0
     end;
+
+    test "can list_models" begin
+      let* resp = API.list_models () in
+      let* () = Lwt_io.printl "Model ids:" in
+      let* () = Lwt_list.iter_s (fun (m : Model.t) -> Lwt_io.printl m.id) resp.data in
+      let+ () = Lwt_io.(flush stdout) in
+      List.length resp.data > 0 
+    end; 
 
   ]
 
 let () =
-  Lwt_main.run @@ Alcotest_lwt.run "oopenai tests" [
+  let verbose = false in
+  let argv = if verbose then Some [|"tests"; "--verbose"|] else None in
+  Lwt_main.run @@ Alcotest_lwt.run ?argv "oopenai tests" [
     "end to end tests", tests
   ]
