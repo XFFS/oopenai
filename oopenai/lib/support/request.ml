@@ -64,7 +64,12 @@ module Make (Config: Auth) = struct
 
   let read_json_body resp body =
     handle_response resp (fun () ->
-      (Lwt.(Cohttp_lwt.Body.to_string body >|= Yojson.Safe.from_string)))
+      (* TODO: Replace with propper logging *)
+      let open Lwt.Syntax in
+      let* resp_string = Cohttp_lwt.Body.to_string body in
+      let* () = Lwt_io.printf "%s\n" resp_string in
+      let+ () = Lwt_io.(flush stdout) in
+      Yojson.Safe.from_string resp_string)
 
   let read_json_body_as of_json resp body =
     Lwt.(read_json_body resp body >|= of_json)
