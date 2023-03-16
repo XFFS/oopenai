@@ -52,7 +52,13 @@ let tests =
       List.length resp.data != 0
     end;
 
-
+    test "can create_moderation" begin
+      let create_moderation_request_t =
+        Create_moderation_request.create ["I want to kill them or give them cake!"]
+      in 
+      let+ resp =  API.create_moderation ~create_moderation_request_t in 
+      List.length resp.results = 0
+    end;
 
   ]
 
