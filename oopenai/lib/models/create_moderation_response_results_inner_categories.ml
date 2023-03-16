@@ -7,12 +7,12 @@
 
 type t = {
     hate: bool;
-    hate_threatening: bool;
-    self_harm: bool;
+    hate_threatening: bool; [@key "hate/threatening"]
+    self_harm: bool; [@key "self-harm"]
     sexual: bool;
-    sexual_minors: bool;
+    sexual_minors: bool; [@key "sexual/minors"]
     violence: bool;
-    violence_graphic: bool;
+    violence_graphic: bool; [@key "violence/graphic"]
 } [@@deriving yojson { strict = false }, show ];;
 
 let create (hate : bool) (hate_threatening : bool) (self_harm : bool) (sexual : bool) (sexual_minors : bool) (violence : bool) (violence_graphic : bool) : t = {

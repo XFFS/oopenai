@@ -7,12 +7,12 @@
 
 type t = {
     hate: float;
-    hate_threatening: float;
-    self_harm: float;
+    hate_threatening: float; [@key "hate/threatening"]
+    self_harm: float; [@key "self-harm"]
     sexual: float;
-    sexual_minors: float;
+    sexual_minors: float; [@key "sexual/minors"]
     violence: float;
-    violence_graphic: float;
+    violence_graphic: float; [@key "violence/graphic"]
 } [@@deriving yojson { strict = false }, show ];;
 
 let create (hate : float) (hate_threatening : float) (self_harm : float) (sexual : float) (sexual_minors : float) (violence : float) (violence_graphic : float) : t = {
