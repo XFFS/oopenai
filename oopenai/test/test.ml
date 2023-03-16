@@ -43,6 +43,15 @@ let tests =
       | [] -> false
     end;
 
+    test "can create_embedding" begin
+      let create_embedding_request_t =
+        let input = ["Are cats cool or cooler?"] in 
+        Create_embedding_request.create "text-embedding-ada-002" input
+      in 
+      let+ resp = API.create_embedding ~create_embedding_request_t in 
+      List.length resp.data != 0
+    end;
+
 
 
   ]
