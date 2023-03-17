@@ -20,7 +20,7 @@ let test name (test_case : bool Lwt.t) : unit Alcotest_lwt.test_case =
 
 let tests =
   [
-    test "can create_completion" begin
+    `Disabled, test "can create_completion" begin
       let create_completion_request_t = 
         let req = Create_completion_request.create "ada" in 
         let prompt = Some ["Give me dogs"; "Give me some cats"] in
@@ -31,7 +31,7 @@ let tests =
       List.length resp.choices = 10
     end;
 
-    test "can create_edit" begin
+    `Disabled, test "can create_edit" begin
       let create_edit_request_t =
         let req = Create_edit_request.create "text-davinci-edit-001" "Fix the spelling mistakes" in
         let input = Some "What day of the wek is it?" in 
@@ -43,7 +43,7 @@ let tests =
       | [] -> false
     end;
 
-    test "can create_embedding" begin
+    `Disabled, test "can create_embedding" begin
       let create_embedding_request_t =
         let input = ["Are cats cool or cooler?"] in 
         Create_embedding_request.create "text-embedding-ada-002" input
@@ -60,7 +60,7 @@ let tests =
       List.length resp.results != 0
     end;
 
-    test "can list_models" begin
+    `Disabled, test "can list_models" begin
       let* resp = API.list_models () in
       let* () = Lwt_io.printl "Model ids:" in
       let* () = Lwt_list.iter_s (fun (m : Model.t) -> Lwt_io.printl m.id) resp.data in
@@ -69,6 +69,10 @@ let tests =
     end; 
 
   ]
+  |> List.filter_map (function 
+     | (`Enabled, t) -> Some t
+     | (`Disabled,_) -> None
+     )
 
 let () =
   let verbose = false in
