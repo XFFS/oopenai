@@ -29,7 +29,7 @@
   ; TODO Only with test?
   yaml
   decoders
-  decoders-jsonml
+  decoders-jsonm
   ppxlib
 
   (ppx_expect (and :with-test (>= v0.15.1)))
