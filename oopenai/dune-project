@@ -24,6 +24,7 @@
   tls-lwt
   ppx_deriving
   ocaml-migrate-parsetree
+  multipart_form-lwt
 
   ; Utils
   ; TODO Only with test?
