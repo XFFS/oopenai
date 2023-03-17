@@ -17,6 +17,10 @@ depends: [
   "tls-lwt"
   "ppx_deriving"
   "ocaml-migrate-parsetree"
+  "yaml"
+  "decoders"
+  "decoders-jsonml"
+  "ppxlib"
   "ppx_expect" {with-test & >= "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}

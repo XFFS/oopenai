@@ -25,6 +25,13 @@
   ppx_deriving
   ocaml-migrate-parsetree
 
+  ; Utils
+  ; TODO Only with test?
+  yaml
+  decoders
+  decoders-jsonml
+  ppxlib
+
   (ppx_expect (and :with-test (>= v0.15.1)))
   (alcotest :with-test)
   (alcotest-lwt :with-test)
