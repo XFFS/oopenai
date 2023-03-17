@@ -2,7 +2,7 @@ open Oopenai
 open Lwt.Syntax
 
 module Config : Request.Auth = struct
-  let api_key = Sys.getenv "OPENAI_API_KEY"
+  let api_key = Sys.getenv_opt "OPENAI_API_KEY" |> Option.value ~default:"OPENAI_API_KEY not set"
   let org_id = None
 end
 
