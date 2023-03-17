@@ -17,6 +17,7 @@ depends: [
   "tls-lwt"
   "ppx_deriving"
   "ocaml-migrate-parsetree"
+  "multipart_form-lwt"
   "yaml"
   "decoders"
   "decoders-jsonm"
