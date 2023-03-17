@@ -7,3 +7,5 @@ _opam/
 .DS_Store
 # Direnv
 .envrc
+# VsCode settings
+.vscode
