@@ -52,7 +52,15 @@ let tests =
       List.length resp.data != 0
     end;
 
-    test "can create_moderation" begin
+    `Enabled, test "can create_file" begin
+      let file = In_channel.with_open_bin "/Users/fredaxin/projects/oopenai/oopenai/test/test_files/test_file.jsonl" In_channel.input_all in 
+      let purpose = "It just doesn't matter." in 
+      let+ resp = API.create_file ~file ~purpose in 
+      String.equal resp.purpose purpose
+    end;
+
+
+    `Disabled, test "can create_moderation" begin
       let create_moderation_request_t =
         Create_moderation_request.create ["I want to kill them or give them cake!"]
       in 
@@ -66,9 +74,15 @@ let tests =
       let* () = Lwt_list.iter_s (fun (m : Model.t) -> Lwt_io.printl m.id) resp.data in
       let+ () = Lwt_io.(flush stdout) in
       List.length resp.data > 0 
-    end; 
+    end;
 
-  ]
+    `Disabled, test "can retrieve_model" begin
+      let+ resp = API.retrieve_model ~model:"text-davinci-003" in 
+      String.equal resp.id "text-davinci-003"
+    end;
+
+
+  ] 
   |> List.filter_map (function 
      | (`Enabled, t) -> Some t
      | (`Disabled,_) -> None
