@@ -2,7 +2,10 @@ open Oopenai
 open Lwt.Syntax
 
 module Config : Request.Auth = struct
-  let api_key = Sys.getenv_opt "OPENAI_API_KEY" |> Option.value ~default:"OPENAI_API_KEY not set"
+  let api_key =
+    Sys.getenv_opt "OPENAI_API_KEY"
+    |> Option.value ~default:"OPENAI_API_KEY not set"
+
   let org_id = None
 end
 
@@ -67,17 +70,13 @@ let tests =
             let+ resp = API.create_embedding ~create_embedding_request_t in
             List.length resp.data != 0
         end )
-  ; ( `Disabled
+  ; ( `Enabled
     , test
         "can create_file"
         begin
           fun () ->
-            let* file =
-              Lwt_io.(with_file ~mode:Input)
-                "./test_files/test_file.jsonl"
-                Lwt_io.read
-            in
-            let purpose = "It just doesn't matter." in
+            let file = "./test_files/test_file.jsonl" in
+            let purpose = "fine-tune" in
             let+ resp = API.create_file ~file ~purpose in
             String.equal resp.purpose purpose
         end )
@@ -122,6 +121,20 @@ let tests =
          | `Disabled, _ -> None)
 
 let () =
+  let log_level = Some Logs.Debug in
+  if not @@ Cohttp_lwt_unix.Debug.debug_active () then (
+    Fmt_tty.setup_std_outputs ();
+    Logs.set_level ~all:true None;
+    (* Enable just cohttp-lwt and cohttp-lwt-unix logs *)
+    List.iter (fun src ->
+        match Logs.Src.name src with
+        | "cohttp.lwt.io"
+        | "cohttp.lwt.server" ->
+            Logs.Src.set_level src log_level
+        | _ -> ())
+    @@ Logs.Src.list ();
+    Logs.set_reporter Cohttp_lwt_unix.Debug.default_reporter
+  );
   let verbose = true in
   let argv =
     if verbose then
