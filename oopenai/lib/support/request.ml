@@ -18,10 +18,15 @@ module Make (Config: Auth) = struct
       | Some id -> ["OpenAI-Organization", id]
     in
     Cohttp.Header.of_list ( 
-      [ "Content-Type", "application/json"
-      ; "Authorization", "Bearer "^Config.api_key 
+      [ "Authorization", "Bearer "^Config.api_key
       ] @ org_id_header
     )
+
+  let json_content_headers =
+    Cohttp.Header.add default_headers "Content-Type" "application/json"
+
+  let multipart_content_headers =
+    Cohttp.Header.add default_headers "Content-Type" "multipart/form-data"
 
   let option_fold f default o =
     match o with
@@ -67,7 +72,7 @@ module Make (Config: Auth) = struct
       (* TODO: Replace with propper logging *)
       let open Lwt.Syntax in
       let* resp_string = Cohttp_lwt.Body.to_string body in
-      let* () = Lwt_io.printf "%s\n" resp_string in
+      let* () = Lwt_io.printf ">>>> BODY: %s\n" resp_string in
       let+ () = Lwt_io.(flush stdout) in
       Yojson.Safe.from_string resp_string)
 
