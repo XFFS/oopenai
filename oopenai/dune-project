@@ -23,6 +23,7 @@
   tls-lwt
   ocaml-migrate-parsetree
   multipart_form-lwt
+  uuidm
 
   ppx_deriving
   ppx_deriving_yojson
