@@ -10,14 +10,15 @@ bug-reports: "https://github.com/shonfeder/oopenai/issues"
 depends: [
   "dune" {>= "2.9" & > "2.9"}
   "ocaml" {>= "5.0"}
-  "ppx_deriving_yojson"
   "cohttp"
   "cohttp-lwt-unix"
   "tls"
   "tls-lwt"
-  "ppx_deriving"
   "ocaml-migrate-parsetree"
   "multipart_form-lwt"
+  "ppx_deriving"
+  "ppx_deriving_yojson"
+  "ppx_string_interpolation"
   "yaml"
   "decoders"
   "decoders-jsonm"
