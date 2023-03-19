@@ -19,19 +19,15 @@ module Part = struct
     let typ = Option.map (Printf.sprintf "Content-Type: %s") typ in
     { disposition; typ; content }
 
-  (* Add a new line to a buffer *)
   let ends_with_nl s =
     let last_char = String.(get s (length s - 1)) in
     Char.(equal last_char '\n')
 
-  let nl buf = Buffer.add_char buf '\n'
-
-  let add_nl buf s =
-    Buffer.add_string buf s;
-    nl buf
-
   let add_to_buffer buf v =
-    let add_nl = add_nl buf in
+    let add_nl s =
+      Buffer.add_string buf s;
+      Buffer.add_char buf '\n'
+    in
     v.disposition |> add_nl;
     (* only added if v.typ is `Some t` *)
     v.typ |> Option.iter add_nl;

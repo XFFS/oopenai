@@ -35,10 +35,10 @@ open Oopenai
 open Expect_lwt
 
 let%expect_test "can generate multipart-form part" =
-  (print_endline
-  @@ Multipart_form.Part.(
-       v ~name:"example-part" ~typ:"text/html" "<i>example content</i>"
-       |> to_string));
+  Multipart_form.Part.(
+    v ~name:"example-part" ~typ:"text/html" "<i>example content</i>"
+    |> to_string)
+  |> print_endline;
   [%expect
     {|
     Content-Disposition: form-data; name="example-part"
@@ -61,7 +61,7 @@ let example_form =
 
 let%expect_test "can generate multipart-form data" =
   let* form = example_form in
-  print_endline (Multipart_form.to_string form);
+  form |> Multipart_form.to_string |> print_endline;
   [%expect
     {|
     --TEST_BOUNDARY
@@ -84,6 +84,7 @@ let%expect_test "can add header to Cohttp headers" =
   |> Multipart_form.add_header form
   |> Cohttp.Header.to_string
   |> print_endline;
-  [%expect {|
+  [%expect
+    {|
     Content-type: multipart/form-data; boundary=TEST_BOUNDARY
      |}]

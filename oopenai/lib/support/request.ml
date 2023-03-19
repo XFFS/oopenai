@@ -25,9 +25,6 @@ module Make (Config: Auth) = struct
   let json_content_headers =
     Cohttp.Header.add default_headers "Content-Type" "application/json"
 
-  let multipart_content_headers =
-    Cohttp.Header.add default_headers "Content-Type" "multipart/form-data"
-
   let option_fold f default o =
     match o with
     | Some v -> f v
