@@ -71,9 +71,7 @@ module Make (Config: Auth) = struct
     handle_response resp (fun () ->
       (* TODO: Replace with propper logging *)
       let open Lwt.Syntax in
-      let* resp_string = Cohttp_lwt.Body.to_string body in
-      let* () = Lwt_io.printf ">>>> BODY: %s\n" resp_string in
-      let+ () = Lwt_io.(flush stdout) in
+      let+ resp_string = Cohttp_lwt.Body.to_string body in
       Yojson.Safe.from_string resp_string)
 
   let read_json_body_as of_json resp body =
@@ -126,5 +124,4 @@ module Make (Config: Auth) = struct
     option_fold (add_form_encoded_body_param params param_name to_string) params param_value
 
   let finalize_form_encoded_body body = Cohttp_lwt.Body.of_string body
-
 end

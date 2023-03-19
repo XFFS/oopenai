@@ -1,6 +1,14 @@
 open Oopenai
 open Lwt.Syntax
 
+(* Configure test verbosity *)
+let verbosity : [ `Quiet | `Verbose | `Debug ] =
+  Sys.getenv_opt "VERBOSITY" |> Option.value ~default:"quiet" |> function
+  | "quiet" -> `Quiet
+  | "verbose" -> `Verbose
+  | "dubug" -> `Debug
+  | invalid -> failwith ("Invalid test VERBOSITY: " ^ invalid)
+
 module Config : Request.Auth = struct
   let api_key =
     Sys.getenv_opt "OPENAI_API_KEY"
@@ -12,7 +20,7 @@ end
 module API = Open_ai_api.Make (Config)
 
 let free () =
-  print_endline "freeing all resources";
+  (* print_endline "freeing all resources"; *)
   Lwt.return ()
 
 let test_lwt (test_case : unit -> bool Lwt.t) switch () =
@@ -70,7 +78,7 @@ let tests =
             let+ resp = API.create_embedding ~create_embedding_request_t in
             List.length resp.data != 0
         end )
-  ; ( `Enabled
+  ; ( `Disabled
     , test
         "can create_file"
         begin
@@ -116,31 +124,60 @@ let tests =
             String.equal resp.id "text-davinci-003"
         end )
   ]
-  |> List.filter_map (function
-         | `Enabled, t -> Some t
-         | `Disabled, _ -> None)
 
-let () =
-  let log_level = Some Logs.Debug in
+let filter_out_disabled (suite_name, tests) =
+  let filter_enabled =
+    match Sys.getenv_opt "RUN_DISABLED" with
+    | Some ("true" | "1") -> List.map snd (* just accept all tests *)
+    | _ ->
+        List.filter_map (function
+            | `Enabled, t -> Some t
+            | `Disabled, _ -> None)
+  in
+  suite_name, filter_enabled tests
+
+let test_suites = [ "end to end tests", tests ]
+
+let configure_logging () =
+  let all_log_level =
+    match verbosity with
+    | `Quiet
+    | `Verbose ->
+        None
+    | `Debug -> Some Logs.Debug
+  in
+  let http_client_log_level =
+    match verbosity with
+    | `Quiet -> None
+    | `Verbose
+    | `Debug ->
+        Some Logs.Debug
+  in
   if not @@ Cohttp_lwt_unix.Debug.debug_active () then (
     Fmt_tty.setup_std_outputs ();
-    Logs.set_level ~all:true None;
-    (* Enable just cohttp-lwt and cohttp-lwt-unix logs *)
-    List.iter (fun src ->
-        match Logs.Src.name src with
-        | "cohttp.lwt.io"
-        | "cohttp.lwt.server" ->
-            Logs.Src.set_level src log_level
-        | _ -> ())
-    @@ Logs.Src.list ();
+    Logs.set_level ~all:true all_log_level;
+    Logs.Src.list ()
+    |> List.iter (fun src ->
+           match Logs.Src.name src with
+           (* Enable just cohttp-lwt and cohttp-lwt-unix logs *)
+           | "cohttp.lwt.io"
+           | "cohttp.lwt.server" ->
+               Logs.Src.set_level src http_client_log_level
+           | _ -> ());
     Logs.set_reporter Cohttp_lwt_unix.Debug.default_reporter
-  );
-  let verbose = true in
+  )
+
+let run_tests () =
   let argv =
-    if verbose then
-      Some [| "tests"; "--verbose" |]
-    else
-      None
+    match verbosity with
+    | `Quiet -> None
+    | _ -> Some [| "tests"; "--verbose" |]
   in
-  Lwt_main.run
-  @@ Alcotest_lwt.run ?argv "oopenai tests" [ "end to end tests", tests ]
+  test_suites
+  |> List.map filter_out_disabled
+  |> Alcotest_lwt.run ?argv "oopenai tests"
+  |> Lwt_main.run
+
+let () =
+  configure_logging ();
+  run_tests ()

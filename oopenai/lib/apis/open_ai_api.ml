@@ -63,89 +63,19 @@ module Make (Config : Request.Auth) = struct
       resp
       body
 
-  (* from https://github.com/dinosaure/multipart_form/blob/master/test/test.ml#L168 *)
-  let random_string len =
-    let res = Bytes.create len in
-    for i = 0 to len - 1 do
-      let code = Random.int (10 + 26 + 26) in
-      if code < 10 then
-        Bytes.set res i (Char.chr (Char.code '0' + code))
-      else if code < 10 + 16 then
-        Bytes.set res i (Char.chr (Char.code 'a' + code - 10))
-      else
-        Bytes.set res i (Char.chr (Char.code 'A' + code - (10 + 26)))
-    done;
-    Bytes.unsafe_to_string res
-
-  let stream_of_string x =
-    let once = ref false in
-    let go () =
-      if !once then
-        None
-      else (
-        once := true;
-        Some (x, 0, String.length x)
-      )
-    in
-    go
-
-  (* TODO stream properly *)
-  let stream_of_file file_name =
-    let open Lwt.Syntax in
-    let+ content = Lwt_io.(with_file ~mode:input file_name read) in
-    stream_of_string content
-  (* let offset = ref 0 in *)
-  (* let lines = Lwt_io.lines_of_file file_name in *)
-  (* Lwt_stream.parse lines (fun stream -> *)
-  (*     let x = ref None in *)
-  (*     let get_next_line () = *)
-  (*       let+ l = Lwt_stream.get stream in *)
-  (*       Printf.printf "Reading line: %s\n" Option.(value l ~default:"NONe!"); *)
-  (*       x := l *)
-  (*     in *)
-  (*     Lwt.return @@ fun () -> *)
-  (*     let _ = get_next_line () in *)
-  (*     match !x with *)
-  (*     | None -> None *)
-  (*     | Some line -> *)
-  (*         let len = String.length line in *)
-  (*         let off = !offset in *)
-  (*         offset := off + len; *)
-  (*         Some (line, off, len)) *)
-
   let create_file ~file ~purpose =
     let open Lwt.Syntax in
     let uri = Request.build_uri "/files" in
-    let headers = Request.default_headers in
-    let rng ?(g : _) = random_string in
-    let* file_stream = stream_of_file file in
-    (* basename of file *)
     let filename = String.split_on_char '/' file |> List.rev |> List.hd in
-    let file =
-      let disposition = Multipart_form.Content_disposition.v ~filename "file" in
-      Multipart_form.part ~disposition file_stream
+    let* content = Lwt_io.(with_file ~mode:Input file read) in
+    let form =
+      Multipart_form.(
+        v Part.[ v ~name:"purpose" purpose; v ~name:"file" ~filename content ])
     in
-    let purpose =
-      Multipart_form.(part ~disposition:Content_disposition.(v "purpose"))
-        (stream_of_string purpose)
-    in
-    let header, stream =
-      Multipart_form.multipart ~rng [ file; purpose ]
-      |> Multipart_form.to_stream
-    in
-    let lwt_stream =
-      Lwt_stream.from_direct (fun () ->
-          match stream () with
-          | None -> None
-          | Some (p, _, _) -> Some p)
-    in
-    let body = Cohttp_lwt.Body.of_stream lwt_stream in
-    let* () = Lwt_io.printf ">>>>> FORM DATA\n" in
-    let* () = Lwt.return @@ Format.fprintf Format.std_formatter ">>> HEADER: %a\n" Multipart_form.Header.pp header in
-    let* () = Lwt.bind (Cohttp_lwt.Body.to_string body) Lwt_io.printl in
-    let* () = Lwt_io.printf ">>>> HEADERS:\n%s" (Cohttp.Header.to_string headers) in
+    let headers = Multipart_form.add_header form Request.default_headers in
+    let body = Cohttp_lwt.Body.of_string (Multipart_form.to_string form) in
     let* resp, resp_body =
-      Cohttp_lwt_unix.Client.call `POST uri ~headers ~body
+      Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body
     in
     Request.read_json_body_as
       (JsonSupport.unwrap Open_ai_file.of_yojson)
