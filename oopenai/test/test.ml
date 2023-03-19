@@ -6,7 +6,7 @@ let verbosity : [ `Quiet | `Verbose | `Debug ] =
   Sys.getenv_opt "VERBOSITY" |> Option.value ~default:"quiet" |> function
   | "quiet" -> `Quiet
   | "verbose" -> `Verbose
-  | "dubug" -> `Debug
+  | "debug" -> `Debug
   | invalid -> failwith ("Invalid test VERBOSITY: " ^ invalid)
 
 module Config : Request.Auth = struct
@@ -88,6 +88,25 @@ let tests =
             let+ resp = API.create_file ~file ~purpose in
             String.equal resp.purpose purpose
         end )
+  ; ( `Enabled
+    , test
+        "can create_image"
+        begin
+          fun () ->
+            let create_image_request_t =
+              let req =
+                Create_image_request.create
+                  "The actor Nicolas Cage standing on a table asking why it \
+                   can be misfiled."
+              in
+              let n = Some 2l in
+              let size = Some `_512x512 in
+              let response_format = Some `Url in
+              { req with n; size; response_format }
+            in
+            let+ resp = API.create_image ~create_image_request_t in
+            List.length resp.data > 0
+        end )
   ; ( `Disabled
     , test
         "can create_moderation"
@@ -99,6 +118,44 @@ let tests =
             in
             let+ resp = API.create_moderation ~create_moderation_request_t in
             List.length resp.results != 0
+        end )
+  ; ( `Disabled
+    , test
+        "can delete_file"
+        begin
+          fun () ->
+            let+ resp =
+              API.delete_file ~file_id:"file-rkx6H7X8OVgFkmDYDPGBbgOh"
+            in
+            resp.deleted
+        end )
+  ; ( `Disabled (* cannot test until using paid account *)
+    , test
+        "can download_file"
+        begin
+          fun () ->
+            let+ _ =
+              API.download_file ~file_id:"file-0iKqm72yADJazJ74oROFKx9v"
+            in
+            true
+        end )
+  ; ( `Disabled
+    , test
+        "can list_files"
+        begin
+          fun () ->
+            let+ resp = API.list_files () in
+            List.length resp.data != 0
+        end )
+  ; ( `Disabled
+    , test
+        "can retrieve_file"
+        begin
+          fun () ->
+            let+ resp =
+              API.retrieve_file ~file_id:"file-rkx6H7X8OVgFkmDYDPGBbgOh"
+            in
+            String.equal resp.id "file-rkx6H7X8OVgFkmDYDPGBbgOh"
         end )
   ; ( `Disabled
     , test
