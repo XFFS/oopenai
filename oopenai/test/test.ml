@@ -88,25 +88,29 @@ let tests =
             let+ resp = API.create_file ~file ~purpose in
             String.equal resp.purpose purpose
         end )
-  ; ( `Enabled
+  ; ( `Disabled
     , test
         "can create_image"
         begin
           fun () ->
             let create_image_request_t =
-              let req =
                 Create_image_request.create
                   "The actor Nicolas Cage standing on a table asking why it \
                    can be misfiled."
-              in
-              let n = Some 2l in
-              let size = Some `_512x512 in
-              let response_format = Some `Url in
-              { req with n; size; response_format }
             in
             let+ resp = API.create_image ~create_image_request_t in
             List.length resp.data > 0
         end )
+  ; ( `Enabled
+  , test
+        "can create_image_variation"
+          begin
+            fun () ->
+              let image = "./test_files/image_edit_original.png" in
+              let+ resp = API.create_image_variation ~image () in
+              List.length resp.data > 0
+          end 
+  )
   ; ( `Disabled
     , test
         "can create_moderation"
@@ -203,7 +207,7 @@ let configure_logging () =
         None
     | `Debug -> Some Logs.Debug
   in
-  let http_client_log_level =
+  let application_log_level =
     match verbosity with
     | `Quiet -> None
     | `Verbose
@@ -218,8 +222,9 @@ let configure_logging () =
            match Logs.Src.name src with
            (* Enable just cohttp-lwt and cohttp-lwt-unix logs *)
            | "cohttp.lwt.io"
-           | "cohttp.lwt.server" ->
-               Logs.Src.set_level src http_client_log_level
+           | "cohttp.lwt.server" 
+           | "application" ->
+               Logs.Src.set_level src application_log_level
            | _ -> ());
     Logs.set_reporter Cohttp_lwt_unix.Debug.default_reporter
   )

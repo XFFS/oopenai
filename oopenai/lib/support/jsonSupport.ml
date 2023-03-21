@@ -3,7 +3,10 @@ open Ppx_deriving_yojson_runtime
 let unwrap to_json json =
     match to_json json with
     | Result.Ok json -> json
-    | Result.Error s -> failwith s
+    | Result.Error s -> 
+        let err_json_string = Yojson.Safe.to_string json in 
+        Logs.err (fun f -> f "%s" err_json_string);
+        failwith s
 
 let to_int json =
     match json with

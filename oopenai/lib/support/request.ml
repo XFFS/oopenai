@@ -57,16 +57,24 @@ module Make (Config: Auth) = struct
 
   let write_as_json_body to_json payload = write_json_body (to_json payload)
 
-  let handle_response resp on_success_handler =
+  let handle_response resp ?body on_success_handler  =
     match Cohttp_lwt.Response.status resp with
     | #Cohttp.Code.success_status -> on_success_handler ()
-    | s -> failwith ("Server responded with status " ^ Cohttp.Code.(reason_phrase_of_code (code_of_status s)))
+    | s -> 
+      let open Lwt.Syntax in
+      Logs.err (fun f -> f "%a" Cohttp_lwt.Response.pp_hum resp);
+      let* () = match body with
+      | None -> Lwt.return ()
+      | Some b ->
+        let+ body_str = Cohttp_lwt.Body.to_string b in
+        Logs.err (fun f -> f "%s" body_str)
+      in
+      failwith ("Server responded with status " ^ Cohttp.Code.(reason_phrase_of_code (code_of_status s)))
 
   let handle_unit_response resp = handle_response resp (fun () -> Lwt.return ())
 
   let read_json_body resp body =
-    handle_response resp (fun () ->
-      (* TODO: Replace with propper logging *)
+    handle_response resp ~body (fun () ->
       let open Lwt.Syntax in
       let+ resp_string = Cohttp_lwt.Body.to_string body in
       Yojson.Safe.from_string resp_string)
