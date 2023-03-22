@@ -18,7 +18,6 @@ module Make (Config: Request.Auth): sig
     val create_image_edit : image:string -> prompt:string -> ?mask:string -> ?n:int32 -> ?size:Enums.size -> ?response_format:Enums.response_format -> ?user:string -> unit -> Images_response.t Lwt.t
     val create_image_variation : image:string -> ?n:int32 -> ?size:Enums.size -> ?response_format:Enums.response_format -> ?user:string -> unit -> Images_response.t Lwt.t
     val create_moderation : create_moderation_request_t:Create_moderation_request.t -> Create_moderation_response.t Lwt.t
-    val create_search : engine_id:string -> create_search_request_t:Create_search_request.t -> Create_search_response.t Lwt.t
     val delete_file : file_id:string -> Delete_file_response.t Lwt.t
     val delete_model : model:string -> Delete_model_response.t Lwt.t
     val download_file : file_id:string -> string Lwt.t
