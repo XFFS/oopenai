@@ -23,6 +23,7 @@ depends: [
   "decoders"
   "decoders-jsonm"
   "ppxlib"
+  "atdgen"
   "ppx_expect" {with-test & >= "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}

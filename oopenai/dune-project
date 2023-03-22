@@ -30,10 +30,12 @@
 
   ; Utils
   ; TODO Only with test?
+  ; Move into separate package?
   yaml
   decoders
   decoders-jsonm
   ppxlib
+  atdgen
 
   (ppx_expect (and :with-test (>= v0.15.1)))
   (alcotest :with-test)
