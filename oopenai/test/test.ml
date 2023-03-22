@@ -94,23 +94,33 @@ let tests =
         begin
           fun () ->
             let create_image_request_t =
-                Create_image_request.create
-                  "The actor Nicolas Cage standing on a table asking why it \
-                   can be misfiled."
+              Create_image_request.create
+                "The actor Nicolas Cage standing on a table asking why it can \
+                 be misfiled."
             in
             let+ resp = API.create_image ~create_image_request_t in
             List.length resp.data > 0
         end )
   ; ( `Enabled
-  , test
+    , test
+        "can create_image_edit"
+        begin
+          fun () ->
+            let image = "./test_files/image_edit_original.png" in
+            let prompt = "Add a flamingo to the pool" in
+            let mask = "./test_files/image_edit_mask.png" in
+            let+ resp = API.create_image_edit ~image ~prompt ~mask () in
+            List.length resp.data > 0
+        end )
+  ; ( `Disabled
+    , test
         "can create_image_variation"
-          begin
-            fun () ->
-              let image = "./test_files/image_edit_original.png" in
-              let+ resp = API.create_image_variation ~image () in
-              List.length resp.data > 0
-          end 
-  )
+        begin
+          fun () ->
+            let image = "./test_files/image_edit_original.png" in
+            let+ resp = API.create_image_variation ~image () in
+            List.length resp.data > 0
+        end )
   ; ( `Disabled
     , test
         "can create_moderation"
@@ -222,7 +232,7 @@ let configure_logging () =
            match Logs.Src.name src with
            (* Enable just cohttp-lwt and cohttp-lwt-unix logs *)
            | "cohttp.lwt.io"
-           | "cohttp.lwt.server" 
+           | "cohttp.lwt.server"
            | "application" ->
                Logs.Src.set_level src application_log_level
            | _ -> ());
