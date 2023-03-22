@@ -34,6 +34,17 @@ let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
 let tests =
   [ ( `Disabled
     , test
+        (* TODO: The endppoint can not be applied to a job that already has status \"succeeded\"." *)
+        "can cancel_fine_tune"
+        begin
+          fun () ->
+            let+ resp =
+              API.cancel_fine_tune ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
+            in
+            String.equal resp.status "cancelled"
+        end )
+  ; ( `Disabled
+    , test
         "can create_fine_tune"
         begin
           fun () ->
@@ -41,7 +52,8 @@ let tests =
               Create_fine_tune_request.create "file-6wSbwQsi4mJIeM7Hhca0YzuX"
             in
             let+ resp = API.create_fine_tune ~create_fine_tune_request_t in
-            Option.value ~default:[] resp.events |> List.length |> fun x -> x > 0 
+            Option.value ~default:[] resp.events |> List.length |> fun x ->
+            x > 0
         end )
   ; ( `Disabled
     , test
@@ -154,6 +166,16 @@ let tests =
             in
             resp.deleted
         end )
+  ; ( `Enabled
+    , test
+        "can delete_model"
+        begin
+          fun () ->
+            let+ resp =
+              API.delete_model ~model:"curie:ft-synechist-2023-03-22-15-16-01"
+            in
+            resp.deleted
+        end )
   ; ( `Disabled (* cannot test until using paid account *)
     , test
         "can download_file"
@@ -184,7 +206,7 @@ let tests =
             in
             List.length resp.data > 0
         end )
-  ; ( `Enabled 
+  ; ( `Disabled
     , test
         "can list_fine_tunes"
         begin
@@ -210,7 +232,8 @@ let tests =
             let+ resp =
               API.retrieve_fine_tune ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
             in
-            Option.value ~default:[] resp.events |> List.length |> fun x -> x > 0 
+            Option.value ~default:[] resp.events |> List.length |> fun x ->
+            x > 0
         end )
   ; ( `Disabled
     , test
