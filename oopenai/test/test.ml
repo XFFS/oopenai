@@ -45,18 +45,6 @@ let tests =
         end )
   ; ( `Disabled
     , test
-        "can create_fine_tune"
-        begin
-          fun () ->
-            let create_fine_tune_request_t =
-              Create_fine_tune_request.create "file-6wSbwQsi4mJIeM7Hhca0YzuX"
-            in
-            let+ resp = API.create_fine_tune ~create_fine_tune_request_t in
-            Option.value ~default:[] resp.events |> List.length |> fun x ->
-            x > 0
-        end )
-  ; ( `Disabled
-    , test
         "can create_completion"
         begin
           fun () ->
@@ -113,6 +101,18 @@ let tests =
         end )
   ; ( `Disabled
     , test
+        "can create_fine_tune"
+        begin
+          fun () ->
+            let create_fine_tune_request_t =
+              Create_fine_tune_request.create "file-6wSbwQsi4mJIeM7Hhca0YzuX"
+            in
+            let+ resp = API.create_fine_tune ~create_fine_tune_request_t in
+            Option.value ~default:[] resp.events |> List.length |> fun x ->
+            x > 0
+        end )
+  ; ( `Disabled
+    , test
         "can create_image"
         begin
           fun () ->
@@ -166,7 +166,7 @@ let tests =
             in
             resp.deleted
         end )
-  ; ( `Enabled
+  ; ( `Disabled
     , test
         "can delete_model"
         begin
@@ -216,6 +216,21 @@ let tests =
         end )
   ; ( `Disabled
     , test
+        "can list_models"
+        begin
+          fun () ->
+            let* resp = API.list_models () in
+            let* () = Lwt_io.printl "Model ids:" in
+            let* () =
+              Lwt_list.iter_s
+                (fun (m : Model.t) -> Lwt_io.printl m.id)
+                resp.data
+            in
+            let+ () = Lwt_io.(flush stdout) in
+            List.length resp.data > 0
+        end )
+  ; ( `Disabled
+    , test
         "can retrieve_file"
         begin
           fun () ->
@@ -234,21 +249,6 @@ let tests =
             in
             Option.value ~default:[] resp.events |> List.length |> fun x ->
             x > 0
-        end )
-  ; ( `Disabled
-    , test
-        "can list_models"
-        begin
-          fun () ->
-            let* resp = API.list_models () in
-            let* () = Lwt_io.printl "Model ids:" in
-            let* () =
-              Lwt_list.iter_s
-                (fun (m : Model.t) -> Lwt_io.printl m.id)
-                resp.data
-            in
-            let+ () = Lwt_io.(flush stdout) in
-            List.length resp.data > 0
         end )
   ; ( `Disabled
     , test
