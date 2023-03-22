@@ -32,7 +32,18 @@ let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
   Alcotest_lwt.test_case name `Quick (test_lwt test_case)
 
 let tests =
-  [ ( `Disabled
+  [ ( `Enabled
+    , test
+        "can create_fine_tune"
+        begin
+          fun () ->
+            let create_fine_tune_request_t =
+              Create_fine_tune_request.create "file-6wSbwQsi4mJIeM7Hhca0YzuX"
+            in
+            let+ resp = API.create_fine_tune ~create_fine_tune_request_t in
+            List.length resp.events > 0
+        end )
+  ; ( `Disabled
     , test
         "can create_completion"
         begin
@@ -83,7 +94,7 @@ let tests =
         "can create_file"
         begin
           fun () ->
-            let file = "./test_files/test_file.jsonl" in
+            let file = "./test_files/fine_tune.jsonl" in
             let purpose = "fine-tune" in
             let+ resp = API.create_file ~file ~purpose in
             String.equal resp.purpose purpose
@@ -101,7 +112,7 @@ let tests =
             let+ resp = API.create_image ~create_image_request_t in
             List.length resp.data > 0
         end )
-  ; ( `Enabled
+  ; ( `Disabled
     , test
         "can create_image_edit"
         begin
