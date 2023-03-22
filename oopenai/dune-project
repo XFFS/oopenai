@@ -32,6 +32,7 @@
   ; TODO Only with test?
   ; Move into separate package?
   yaml
+  ezjsonm
   decoders
   decoders-jsonm
   ppxlib

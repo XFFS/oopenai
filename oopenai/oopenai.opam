@@ -20,6 +20,7 @@ depends: [
   "ppx_deriving_yojson"
   "ppx_string_interpolation"
   "yaml"
+  "ezjsonm"
   "decoders"
   "decoders-jsonm"
   "ppxlib"
