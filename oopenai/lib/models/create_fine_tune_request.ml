@@ -27,7 +27,7 @@ type t = {
     (* The positive class in binary classification.  This parameter is needed to generate precision, recall, and F1 metrics when doing binary classification.  *)
     classification_positive_class: string option [@default None];
     (* If this is provided, we calculate F-beta scores at the specified beta values. The F-beta score is a generalization of F-1 score. This is only used for binary classification.  With a beta of 1 (i.e. the F-1 score), precision and recall are given the same weight. A larger beta score puts more weight on recall and less on precision. A smaller beta score puts more weight on precision and less on recall.  *)
-    classification_betas: float list;
+    classification_betas: float list option [@default None];
     (* A string of up to 40 characters that will be added to your fine-tuned model name.  For example, a `suffix` of \''custom-model-name\'' would produce a model name like `ada:ft-your-org:custom-model-name-2022-02-15-04-21-04`.  *)
     suffix: string option [@default None];
 } [@@deriving yojson { strict = false }, show ];;
@@ -43,7 +43,7 @@ let create (training_file : string) : t = {
     compute_classification_metrics = None;
     classification_n_classes = None;
     classification_positive_class = None;
-    classification_betas = [];
+    classification_betas = None;
     suffix = None;
 }
 
