@@ -32,7 +32,7 @@ let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
   Alcotest_lwt.test_case name `Quick (test_lwt test_case)
 
 let tests =
-  [ ( `Enabled
+  [ ( `Disabled
     , test
         "can create_fine_tune"
         begin
@@ -41,7 +41,7 @@ let tests =
               Create_fine_tune_request.create "file-6wSbwQsi4mJIeM7Hhca0YzuX"
             in
             let+ resp = API.create_fine_tune ~create_fine_tune_request_t in
-            List.length resp.events > 0
+            Option.value ~default:[] resp.events |> List.length |> fun x -> x > 0 
         end )
   ; ( `Disabled
     , test
@@ -174,6 +174,26 @@ let tests =
         end )
   ; ( `Disabled
     , test
+        "can list_fine_tune_events"
+        begin
+          fun () ->
+            let+ resp =
+              API.list_fine_tune_events
+                ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
+                ()
+            in
+            List.length resp.data > 0
+        end )
+  ; ( `Enabled 
+    , test
+        "can list_fine_tunes"
+        begin
+          fun () ->
+            let+ resp = API.list_fine_tunes () in
+            List.length resp.data != 0
+        end )
+  ; ( `Disabled
+    , test
         "can retrieve_file"
         begin
           fun () ->
@@ -181,6 +201,16 @@ let tests =
               API.retrieve_file ~file_id:"file-rkx6H7X8OVgFkmDYDPGBbgOh"
             in
             String.equal resp.id "file-rkx6H7X8OVgFkmDYDPGBbgOh"
+        end )
+  ; ( `Disabled
+    , test
+        "can retrieve_fine_tune"
+        begin
+          fun () ->
+            let+ resp =
+              API.retrieve_fine_tune ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
+            in
+            Option.value ~default:[] resp.events |> List.length |> fun x -> x > 0 
         end )
   ; ( `Disabled
     , test
