@@ -110,44 +110,59 @@ module Make (Config : Request.Auth) = struct
       resp
       body
 
-  let create_image_edit
-      ~image
-      ~prompt
-      ?mask
-      ?(n = 1l)
-      ?(size = `_1024x1024)
-      ?(response_format = `Url)
-      ?user
-      () =
-    let open Lwt.Infix in
+  let create_image_edit ~image ~prompt ?mask ?n ?size ?response_format ?user ()
+      =
+    let open Lwt.Syntax in
     let uri = Request.build_uri "/images/edits" in
-    let headers = Request.default_headers in
-    let body = Request.init_form_encoded_body () in
-    let body =
-      Request.add_form_encoded_body_param body "image" (fun x -> x) image
+
+    let image_filename = String.split_on_char '/' image |> List.rev |> List.hd in
+    let* image_content = Lwt_io.(with_file ~mode:Input image read) in
+
+    let* mask_part =
+    match mask with 
+    | None -> Lwt.return None
+    | Some mask -> 
+    let mask_filename = String.split_on_char '/' mask |> List.rev |> List.hd in
+    let+ mask_content = Lwt_io.(with_file ~mode:Input mask read) in
+    Some(Multipart_form.Part.v ~name:"mask" ~filename:mask_filename mask_content)
+    in 
+
+    let form =
+      let image_part = Multipart_form.Part.v ~name:"image" ~filename:image_filename image_content in
+      let prompt_part = Multipart_form.Part.v ~name:"prompt" prompt in
+      let n_part =
+        Option.map
+          (fun x -> Multipart_form.Part.v ~name:"n" (Int32.to_string x))
+          n
+      in
+      let size_part =
+        Option.map
+          (fun x -> Multipart_form.Part.v ~name:"size" (Enums.show_size x))
+          size
+      in
+      let response_format_part =
+        Option.map
+          (fun x ->
+            Multipart_form.Part.v
+              ~name:"response_format"
+              (Enums.show_response_format x))
+          response_format
+      in
+      let user_part =
+        Option.map (fun x -> Multipart_form.Part.v ~name:"user" x) user
+      in
+      let optional_part =
+        List.filter_map
+          (fun x -> x)
+          [ mask_part; n_part; size_part; response_format_part; user_part ]
+      in
+      Multipart_form.v (image_part :: prompt_part :: optional_part)
     in
-    let body =
-      Request.maybe_add_form_encoded_body_param body "mask" (fun x -> x) mask
+    let headers = Multipart_form.add_header form Request.default_headers in
+    let body = Cohttp_lwt.Body.of_string (Multipart_form.to_string form) in
+    let* resp, body =
+      Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body
     in
-    let body =
-      Request.add_form_encoded_body_param body "prompt" (fun x -> x) prompt
-    in
-    let body = Request.add_form_encoded_body_param body "n" Int32.to_string n in
-    let body =
-      Request.add_form_encoded_body_param body "size" Enums.show_size size
-    in
-    let body =
-      Request.add_form_encoded_body_param
-        body
-        "response_format"
-        Enums.show_response_format
-        response_format
-    in
-    let body =
-      Request.maybe_add_form_encoded_body_param body "user" (fun x -> x) user
-    in
-    let body = Request.finalize_form_encoded_body body in
-    Cohttp_lwt_unix.Client.call `POST uri ~headers ~body >>= fun (resp, body) ->
     Request.read_json_body_as
       (JsonSupport.unwrap Images_response.of_yojson)
       resp
@@ -188,11 +203,13 @@ module Make (Config : Request.Auth) = struct
           (fun x -> x)
           [ n_part; size_part; response_format_part; user_part ]
       in
-      Multipart_form.v (image_part :: optional_part) 
+      Multipart_form.v (image_part :: optional_part)
     in
     let headers = Multipart_form.add_header form Request.default_headers in
     let body = Cohttp_lwt.Body.of_string (Multipart_form.to_string form) in
-    let* resp, body = Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body in
+    let* resp, body =
+      Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body
+    in
     Request.read_json_body_as
       (JsonSupport.unwrap Images_response.of_yojson)
       resp
