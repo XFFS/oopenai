@@ -230,24 +230,6 @@ module Make (Config : Request.Auth) = struct
       resp
       body
 
-  let create_search ~engine_id ~create_search_request_t =
-    let open Lwt.Infix in
-    let uri = Request.build_uri "/engines/{engine_id}/search" in
-    let headers = Request.json_content_headers in
-    let uri =
-      Request.replace_path_param uri "engine_id" (fun x -> x) engine_id
-    in
-    let body =
-      Request.write_as_json_body
-        Create_search_request.to_yojson
-        create_search_request_t
-    in
-    Cohttp_lwt_unix.Client.call `POST uri ~headers ~body >>= fun (resp, body) ->
-    Request.read_json_body_as
-      (JsonSupport.unwrap Create_search_response.of_yojson)
-      resp
-      body
-
   let delete_file ~file_id =
     let open Lwt.Infix in
     let uri = Request.build_uri "/files/{file_id}" in
