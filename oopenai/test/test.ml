@@ -124,7 +124,7 @@ let fine_tune_tests =
 
 let file_tests =
   Alcotest_lwt.test_case
-    "can do all them file tests"
+    "can do all them file tests - except download_file"
     (* download_file is not included since it can requires paid accounts. *)
     `Quick
     begin
@@ -162,17 +162,6 @@ let file_tests = "file endpoint tests", [ `Disabled, file_tests ]
 let other_endpoint_tests =
   ( "other endpoint tests"
   , [ ( `Disabled
-      , test
-          (* TODO: The endppoint can not be applied to a job that already has status \"succeeded\"." *)
-          "can cancel_fine_tune"
-          begin
-            fun () ->
-              let+ resp =
-                API.cancel_fine_tune ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
-              in
-              String.equal resp.status "cancelled"
-          end )
-    ; ( `Disabled
       , test
           "can create_completion"
           begin
@@ -217,28 +206,6 @@ let other_endpoint_tests =
               in
               let+ resp = API.create_embedding ~create_embedding_request_t in
               List.length resp.data != 0
-          end )
-    ; ( `Disabled
-      , test
-          "can create_file"
-          begin
-            fun () ->
-              let file = "./test_files/fine_tune.jsonl" in
-              let purpose = "fine-tune" in
-              let+ resp = API.create_file ~file ~purpose in
-              String.equal resp.purpose purpose
-          end )
-    ; ( `Disabled
-      , test
-          "can create_fine_tune"
-          begin
-            fun () ->
-              let create_fine_tune_request_t =
-                Create_fine_tune_request.create "file-6wSbwQsi4mJIeM7Hhca0YzuX"
-              in
-              let+ resp = API.create_fine_tune ~create_fine_tune_request_t in
-              Option.value ~default:[] resp.events |> List.length |> fun x ->
-              x > 0
           end )
     ; ( `Disabled
       , test
@@ -287,16 +254,8 @@ let other_endpoint_tests =
           end )
     ; ( `Disabled
       , test
-          "can delete_file"
-          begin
-            fun () ->
-              let+ resp =
-                API.delete_file ~file_id:"file-rkx6H7X8OVgFkmDYDPGBbgOh"
-              in
-              resp.deleted
-          end )
-    ; ( `Disabled
-      , test
+      (* The delete_model endpoint is tested sperately here,
+       since it might take minutes or hours for a fine tuned model to finish processing. *) 
           "can delete_model"
           begin
             fun () ->
@@ -305,8 +264,9 @@ let other_endpoint_tests =
               in
               resp.deleted
           end )
-    ; ( `Disabled (* cannot test until using paid account *)
+    ; ( `Disabled 
       , test
+      (* Cannot test without paid account. *)
           "can download_file"
           begin
             fun () ->
@@ -314,34 +274,6 @@ let other_endpoint_tests =
                 API.download_file ~file_id:"file-0iKqm72yADJazJ74oROFKx9v"
               in
               true
-          end )
-    ; ( `Disabled
-      , test
-          "can list_files"
-          begin
-            fun () ->
-              let+ resp = API.list_files () in
-              List.length resp.data != 0
-          end )
-    ; ( `Disabled
-      , test
-          "can list_fine_tune_events"
-          begin
-            fun () ->
-              let+ resp =
-                API.list_fine_tune_events
-                  ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
-                  ()
-              in
-              List.length resp.data > 0
-          end )
-    ; ( `Disabled
-      , test
-          "can list_fine_tunes"
-          begin
-            fun () ->
-              let+ resp = API.list_fine_tunes () in
-              List.length resp.data != 0
           end )
     ; ( `Disabled
       , test
@@ -360,28 +292,6 @@ let other_endpoint_tests =
           end )
     ; ( `Disabled
       , test
-          "can retrieve_file"
-          begin
-            fun () ->
-              let+ resp =
-                API.retrieve_file ~file_id:"file-rkx6H7X8OVgFkmDYDPGBbgOh"
-              in
-              String.equal resp.id "file-rkx6H7X8OVgFkmDYDPGBbgOh"
-          end )
-    ; ( `Disabled
-      , test
-          "can retrieve_fine_tune"
-          begin
-            fun () ->
-              let+ resp =
-                API.retrieve_fine_tune
-                  ~fine_tune_id:"ft-qsR0s6PjOYfgkpCMMRRoHMyZ"
-              in
-              Option.value ~default:[] resp.events |> List.length |> fun x ->
-              x > 0
-          end )
-    ; ( `Disabled
-      , test
           "can retrieve_model"
           begin
             fun () ->
@@ -390,6 +300,8 @@ let other_endpoint_tests =
           end )
     ] )
 
+
+    
 let filter_out_disabled (suite_name, tests) =
   let filter_enabled =
     match Sys.getenv_opt "RUN_DISABLED" with
