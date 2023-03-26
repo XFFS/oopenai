@@ -33,25 +33,37 @@ let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
 
 let list_fine_tune_tests =
   Alcotest_lwt.test_case
-    "can do all them fine tunes - except canceling it"
+    "can do all them fine tunes - except canceling it, or deleting the fine tuned model"
+    (* The cancel fine_tune endpoint succeeds only if the fine tune creation is still pending.
+       Therefore it is tested separately. *)
+    (* The delete_model endpoint is also tested sperately,
+       since it might take minutes or hours for a fine tuned model to finish processing.
+    *)
     `Quick
     begin
       fun _switch () ->
         let file = "./test_files/fine_tune.jsonl" in
         let purpose = "fine-tune" in
 
+        (* Create the file for fine tune. *)
         let* resp = API.create_file ~file ~purpose in
         let file_id = resp.id in
+
+        (* Create fine tune. *)
         let create_fine_tune_request_t =
           Create_fine_tune_request.create file_id
         in
-
         let* resp = API.create_fine_tune ~create_fine_tune_request_t in
         let fine_tune_id = resp.id in
 
+        (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
+        Unix.sleep 10;
+
+        (* Test retrieve_fine_tune. *)
         let* resp = API.retrieve_fine_tune ~fine_tune_id in
         Alcotest.(check string) "fine tune id is same" fine_tune_id resp.id;
 
+        (* Test list_fine_tunes. *)
         let* resp = API.list_fine_tunes () in
         Alcotest.(check bool)
           "fine tune id is present"
@@ -60,15 +72,92 @@ let list_fine_tune_tests =
              (fun Fine_tune.{ id; _ } -> String.equal fine_tune_id id)
              resp.data);
 
-        let* resp = API.list_fine_tune_events ~fine_tune_id () in 
-        Alcotest.(check bool) "event list is not empty" true (List.length resp.data > 0);
-        
-        let* _ = API.delete_file ~file_id in 
+        (* Test list_fine_tune_events. *)
+        let* resp = API.list_fine_tune_events ~fine_tune_id () in
+        Alcotest.(check bool)
+          "event list is not empty"
+          true
+          (List.length resp.data > 0);
+
+        (* Tear down. *)
+        let* _ = API.delete_file ~file_id in
         Lwt.return_unit
     end
 
+let canel_fine_tune_tests =
+  Alcotest_lwt.test_case
+    "can canel fine tune test"
+    `Quick
+    begin
+      fun _swtich () ->
+        let file = "./test_files/fine_tune.jsonl" in
+        let purpose = "fine-tune" in
+
+        (* Create the file for fine tune. *)
+        let* resp = API.create_file ~file ~purpose in
+        let file_id = resp.id in
+
+        (* Create fine tune. *)
+        let create_fine_tune_request_t =
+          Create_fine_tune_request.create file_id
+        in
+        let* resp = API.create_fine_tune ~create_fine_tune_request_t in
+        let fine_tune_id = resp.id in
+
+        (* Test cancel fine tune*)
+        let* resp = API.cancel_fine_tune ~fine_tune_id in
+        Alcotest.(check string) "status is cancelled" "cancelled" resp.status;
+
+        (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
+        Unix.sleep 10;
+
+        (* Tear down. *)
+        let* _ = API.delete_file ~file_id in
+        Lwt.return_unit
+    end
+
+
 let fine_tune_tests =
-  "fine tune endpoint tests", [ `Enabled, list_fine_tune_tests ]
+  ( "fine tune endpoint tests"
+  , [ `Enabled, list_fine_tune_tests; `Disabled, canel_fine_tune_tests ] )
+
+
+let file_tests =
+  Alcotest_lwt.test_case
+    "can do all them file tests"
+    (* download_file is not included since it can requires paid accounts. *)
+    `Quick
+    begin
+      fun _swith () ->
+        let file = "./test_files/fine_tune.jsonl" in
+        (* The only value allowed in purpose is "fine-tune". *)
+        let purpose = "fine-tune" in
+
+        (* Create file. *)
+        let* resp = API.create_file ~file ~purpose in
+        let file_id = resp.id in
+
+        (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
+        Unix.sleep 10;
+
+        (* Test retrieve_file *)
+        let* resp = API.retrieve_file ~file_id in
+        Alcotest.(check string) "file id is present" file_id resp.id;
+
+        (* Test list_files *)
+        let* resp = API.list_files () in
+        Alcotest.(check bool)
+          "file list is not empty"
+          true
+          (List.length resp.data > 0);
+
+        (* Test delete_file *) 
+        let+ resp = API.delete_file ~file_id in
+        Alcotest.(check bool) "file is deleted" true resp.deleted
+    end
+
+let file_tests = "file endpoint tests", [ `Disabled, file_tests ]
+
 
 let other_endpoint_tests =
   ( "other endpoint tests"
@@ -312,7 +401,7 @@ let filter_out_disabled (suite_name, tests) =
   in
   suite_name, filter_enabled tests
 
-let test_suites = [ fine_tune_tests; other_endpoint_tests ]
+let test_suites = [ fine_tune_tests; file_tests; other_endpoint_tests ]
 
 let configure_logging () =
   let all_log_level =
