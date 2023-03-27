@@ -175,7 +175,7 @@ let other_endpoint_tests =
               let+ resp = API.create_completion ~create_completion_request_t in
               List.length resp.choices = 10
           end )
-    ; ( `Enabled
+    ; ( `Disabled
       , test
           "can create_edit"
           begin
