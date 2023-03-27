@@ -46,7 +46,7 @@ The current release (V.1.0) covers the following endpoints:
 
 ## Installation
 ```sh
-opam install https://github.com/XFFS/oopenai.git
+opam pin https://github.com/XFFS/oopenai.git
 ```
 
 <br/>
