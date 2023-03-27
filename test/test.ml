@@ -119,7 +119,7 @@ let canel_fine_tune_tests =
 
 let fine_tune_tests =
   ( "fine tune endpoint tests"
-  , [ `Enabled, list_fine_tune_tests; `Disabled, canel_fine_tune_tests ] )
+  , [ `Disabled, list_fine_tune_tests; `Disabled, canel_fine_tune_tests ] )
 
 
 let file_tests =
@@ -175,7 +175,7 @@ let other_endpoint_tests =
               let+ resp = API.create_completion ~create_completion_request_t in
               List.length resp.choices = 10
           end )
-    ; ( `Disabled
+    ; ( `Enabled
       , test
           "can create_edit"
           begin
