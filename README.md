@@ -3,8 +3,10 @@
 Authors: Shon Feder, Freda Xin  
 
 <br/>
+
 ## About
 This is an unofficial client library for the [OpenAI API](https://platform.openai.com/docs/api-reference) implemented in OCaml. The library was generated initially by the OCamlClientCodegen code generator for [openapi-generator](https://openapi-generator.tech). However, due to various errors in the code generation, a significant portion of this library was manually corrected and implemented.
+
 <br/>
 
 ## Project Status
