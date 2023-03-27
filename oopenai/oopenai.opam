@@ -19,12 +19,9 @@ depends: [
   "ppx_deriving"
   "ppx_deriving_yojson"
   "ppx_string_interpolation"
-  "yaml"
-  "ezjsonm"
-  "decoders"
-  "decoders-jsonm"
   "ppxlib"
   "atdgen"
+  "ocplib-json-typed"
   "ppx_expect" {with-test & >= "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}
