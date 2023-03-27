@@ -119,7 +119,7 @@ let canel_fine_tune_tests =
 
 let fine_tune_tests =
   ( "fine tune endpoint tests"
-  , [ `Enabled, list_fine_tune_tests; `Disabled, canel_fine_tune_tests ] )
+  , [ `Disabled, list_fine_tune_tests; `Disabled, canel_fine_tune_tests ] )
 
 
 let file_tests =

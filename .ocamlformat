@@ -1,4 +1,3 @@
-exp-grouping = preserve
 break-fun-sig = fit-or-vertical
 break-fun-decl = fit-or-vertical
 wrap-fun-args = false
@@ -9,3 +8,5 @@ break-infix = fit-or-vertical
 if-then-else = k-r
 nested-match = align
 type-decl = sparse
+exp-grouping = preserve
+parens-tuple = multi-line-only
