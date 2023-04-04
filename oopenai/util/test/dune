@@ -1,4 +1,0 @@
-(tests
- (names test_parse_openai_spec)
- (libraries openapi_spec)
- (deps openapi-openai.json))

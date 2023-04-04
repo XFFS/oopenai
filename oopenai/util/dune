@@ -1,8 +1,0 @@
-(executable
- (name ooo_spec_gen)
- (public_name ooosg)
- (libraries openapi_spec
-            compiler-libs
-            ppxlib
-            )
- (preprocess (pps ppxlib.metaquot)))
