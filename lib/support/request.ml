@@ -117,34 +117,4 @@ module Make (Config : Auth) = struct
 
   let maybe_add_query_param uri param_name to_string param_value =
     option_fold (add_query_param uri param_name to_string) uri param_value
-
-  let init_form_encoded_body () = ""
-
-  let add_form_encoded_body_param params param_name to_string param_value =
-    let new_param_enc =
-      Printf.sprintf
-        {|%s=%s|}
-        (Uri.pct_encode param_name)
-        (Uri.pct_encode (to_string param_value))
-    in
-    if params = "" then
-      new_param_enc
-    else
-      Printf.sprintf {|%s&%s|} params new_param_enc
-
-  let add_form_encoded_body_param_list params param_name to_string new_params =
-    add_form_encoded_body_param
-      params
-      param_name
-      (String.concat ",")
-      (to_string new_params)
-
-  let maybe_add_form_encoded_body_param params param_name to_string param_value
-      =
-    option_fold
-      (add_form_encoded_body_param params param_name to_string)
-      params
-      param_value
-
-  let finalize_form_encoded_body body = Cohttp_lwt.Body.of_string body
 end
