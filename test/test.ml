@@ -84,9 +84,9 @@ let list_fine_tune_tests =
         Lwt.return_unit
     end
 
-let canel_fine_tune_tests =
+let cancel_fine_tune_tests =
   Alcotest_lwt.test_case
-    "can canel fine tune test"
+    "can cancel fine tune test"
     `Quick
     begin
       fun _swtich () ->
@@ -119,7 +119,7 @@ let canel_fine_tune_tests =
 
 let fine_tune_tests =
   ( "fine tune endpoint tests"
-  , [ `Disabled, list_fine_tune_tests; `Disabled, canel_fine_tune_tests ] )
+  , [ `Disabled, list_fine_tune_tests; `Disabled, cancel_fine_tune_tests ] )
 
 
 let file_tests =
