@@ -22,7 +22,7 @@
   tls-lwt
   ocaml-migrate-parsetree
   ; TODO: Enable once https://github.com/dinosaure/multipart_form/pull/34 is released
-  ; multipart_form
+  (multipart_form (>= 0.5.0))
   uuidm
 
   ppx_deriving

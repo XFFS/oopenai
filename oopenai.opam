@@ -16,6 +16,7 @@ depends: [
   "tls"
   "tls-lwt"
   "ocaml-migrate-parsetree"
+  "multipart_form" {>= "0.5.0"}
   "uuidm"
   "ppx_deriving"
   "ppx_deriving_yojson"
