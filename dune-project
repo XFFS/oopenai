@@ -22,6 +22,7 @@
   tls-lwt
   ocaml-migrate-parsetree
   (multipart_form (>= 0.5.0))
+  (multipart_form-lwt (>= 0.5.0))
   (multipart_form-cohttp-lwt (>= 0.5.0))
   uuidm
 
