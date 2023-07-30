@@ -22,8 +22,6 @@ depends: [
   "uuidm"
   "ppx_deriving"
   "ppx_deriving_yojson"
-  "ppx_string_interpolation"
-  "ppxlib"
   "ppx_expect" {with-test & >= "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}

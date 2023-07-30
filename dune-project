@@ -28,11 +28,6 @@
 
   ppx_deriving
   ppx_deriving_yojson
-  ppx_string_interpolation
-
-  ; Utils
-  ; TODO Only with test?
-  ppxlib
 
   (ppx_expect (and :with-test (>= v0.15.1)))
   (alcotest :with-test)
