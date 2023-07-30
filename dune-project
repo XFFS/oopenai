@@ -28,7 +28,7 @@
   ppx_deriving
   ppx_deriving_yojson
 
-  (ppx_expect (and :with-test (>= v0.15.1)))
+  (ppx_expect (and :with-test (= v0.15.1)))
   (alcotest :with-test)
   (alcotest-lwt :with-test)
   (qcheck :with-test)
