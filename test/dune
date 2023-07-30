@@ -2,7 +2,7 @@
  (name test)
  (modules test)
  (libraries oopenai
-            multipart_form_test
+            ; multipart_form_test
             alcotest
             alcotest-lwt
             lwt

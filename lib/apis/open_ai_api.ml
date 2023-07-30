@@ -68,15 +68,19 @@ module Make (Config : Request.Auth) = struct
     let uri = Request.build_uri "/files" in
     let filename = String.split_on_char '/' file |> List.rev |> List.hd in
     let* content = Lwt_io.(with_file ~mode:Input file read) in
-    let form =
-      let file_part = Multipart_form.Part.v ~name:"file" ~filename content in
-      let purpose_part = Multipart_form.Part.v ~name:"purpose" purpose in
-      Multipart_form.v [ file_part; purpose_part ]
+    let* form =
+      let+ file_part =
+        Multipart.part_of_file ~name:"file" ~source:file ~filename
+      in
+      let purpose_part =
+        Multipart.part_of_string ~name:"purpose" ~content:purpose
+      in
+      Multipart.form [ file_part; purpose_part ]
     in
-    let headers = Multipart_form.add_header form Request.default_headers in
-    let body = Cohttp_lwt.Body.of_string (Multipart_form.to_string form) in
+    let headers, body = Multipart_form_cohttp.Client.multipart_form form in
+    let headers = Request.add_default_headers headers in
     let* resp, resp_body =
-      Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body
+      Cohttp_lwt_unix.Client.call `POST uri ~headers ~body
     in
     Request.read_json_body_as
       (JsonSupport.unwrap Open_ai_file.of_yojson)
@@ -115,51 +119,68 @@ module Make (Config : Request.Auth) = struct
     let open Lwt.Syntax in
     let uri = Request.build_uri "/images/edits" in
 
-    let image_filename = String.split_on_char '/' image |> List.rev |> List.hd in
-    let* image_content = Lwt_io.(with_file ~mode:Input image read) in
-
-    let* mask_part =
-    match mask with 
-    | None -> Lwt.return None
-    | Some mask -> 
-    let mask_filename = String.split_on_char '/' mask |> List.rev |> List.hd in
-    let+ mask_content = Lwt_io.(with_file ~mode:Input mask read) in
-    Some(Multipart_form.Part.v ~name:"mask" ~filename:mask_filename mask_content)
-    in 
-
-    let form =
-      let image_part = Multipart_form.Part.v ~name:"image" ~filename:image_filename image_content in
-      let prompt_part = Multipart_form.Part.v ~name:"prompt" prompt in
+    let* form =
+      let* mask_part =
+        match mask with
+        | None -> Lwt.return None
+        | Some mask ->
+            let mask_filename =
+              String.split_on_char '/' mask |> List.rev |> List.hd
+            in
+            let+ part =
+              Multipart.part_of_file
+                ~name:"mask"
+                ~source:mask
+                ~filename:mask_filename
+            in
+            Some part
+      in
+      let+ image_part =
+        let image_filename =
+          String.split_on_char '/' image |> List.rev |> List.hd
+        in
+        Multipart.part_of_file
+          ~name:"image"
+          ~source:image
+          ~filename:image_filename
+      in
+      let prompt_part =
+        Multipart.part_of_string ~name:"prompt" ~content:prompt
+      in
       let n_part =
         Option.map
-          (fun x -> Multipart_form.Part.v ~name:"n" (Int32.to_string x))
+          (fun x ->
+            Multipart.part_of_string ~name:"n" ~content:(Int32.to_string x))
           n
       in
       let size_part =
         Option.map
-          (fun x -> Multipart_form.Part.v ~name:"size" (Enums.show_size x))
+          (fun x ->
+            Multipart.part_of_string ~name:"size" ~content:(Enums.show_size x))
           size
       in
       let response_format_part =
         Option.map
           (fun x ->
-            Multipart_form.Part.v
+            Multipart.part_of_string
               ~name:"response_format"
-              (Enums.show_response_format x))
+              ~content:(Enums.show_response_format x))
           response_format
       in
       let user_part =
-        Option.map (fun x -> Multipart_form.Part.v ~name:"user" x) user
+        Option.map
+          (fun content -> Multipart.part_of_string ~name:"user" ~content)
+          user
       in
       let optional_part =
         List.filter_map
           (fun x -> x)
           [ mask_part; n_part; size_part; response_format_part; user_part ]
       in
-      Multipart_form.v (image_part :: prompt_part :: optional_part)
+      Multipart.form (image_part :: prompt_part :: optional_part)
     in
-    let headers = Multipart_form.add_header form Request.default_headers in
-    let body = Cohttp_lwt.Body.of_string (Multipart_form.to_string form) in
+    let headers, body = Multipart_form_cohttp.Client.multipart_form form in
+    let headers = Request.add_default_headers headers in
     let* resp, body =
       Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body
     in
@@ -172,41 +193,45 @@ module Make (Config : Request.Auth) = struct
     let open Lwt.Syntax in
     let uri = Request.build_uri "/images/variations" in
 
-    let filename = String.split_on_char '/' image |> List.rev |> List.hd in
-    let* content = Lwt_io.(with_file ~mode:Input image read) in
-
-    let form =
-      let image_part = Multipart_form.Part.v ~name:"image" ~filename content in
+    let* form =
+      let+ image_part =
+        let filename = String.split_on_char '/' image |> List.rev |> List.hd in
+        Multipart.part_of_file ~name:"image" ~filename ~source:image
+      in
       let n_part =
         Option.map
-          (fun x -> Multipart_form.Part.v ~name:"n" (Int32.to_string x))
+          (fun x ->
+            Multipart.part_of_string ~name:"n" ~content:(Int32.to_string x))
           n
       in
       let size_part =
         Option.map
-          (fun x -> Multipart_form.Part.v ~name:"size" (Enums.show_size x))
+          (fun x ->
+            Multipart.part_of_string ~name:"size" ~content:(Enums.show_size x))
           size
       in
       let response_format_part =
         Option.map
           (fun x ->
-            Multipart_form.Part.v
+            Multipart.part_of_string
               ~name:"response_format"
-              (Enums.show_response_format x))
+              ~content:(Enums.show_response_format x))
           response_format
       in
       let user_part =
-        Option.map (fun x -> Multipart_form.Part.v ~name:"user" x) user
+        Option.map
+          (fun content -> Multipart.part_of_string ~name:"user" ~content)
+          user
       in
-      let optional_part =
+      let optional_parts =
         List.filter_map
           (fun x -> x)
           [ n_part; size_part; response_format_part; user_part ]
       in
-      Multipart_form.v (image_part :: optional_part)
+      Multipart.form (image_part :: optional_parts)
     in
-    let headers = Multipart_form.add_header form Request.default_headers in
-    let body = Cohttp_lwt.Body.of_string (Multipart_form.to_string form) in
+    let headers, body = Multipart_form_cohttp.Client.multipart_form form in
+    let headers = Request.add_default_headers headers in
     let* resp, body =
       Cohttp_lwt_unix.Client.call `POST uri ~chunked:false ~headers ~body
     in

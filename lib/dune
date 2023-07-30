@@ -8,8 +8,10 @@
               lwt
               yojson
               ppx_deriving_yojson.runtime
-              uuidm)
+              uuidm
+              multipart_form
+              multipart_form-cohttp-lwt
+              )
    (preprocess (pps ppx_deriving_yojson
-                    ppx_deriving.std
-                    ppx_string_interpolation))
+                    ppx_deriving.std))
    (wrapped true))
