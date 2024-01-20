@@ -30,7 +30,9 @@
 
   ; TODO: Once oooapi is released
   ; Currently included via opam.template file
+  ;  Make a build time only dep
   oooapi
+  oooapi_lib
 
   (ppx_expect (and :with-test (= v0.15.1)))
   (alcotest :with-test)

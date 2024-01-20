@@ -12,6 +12,7 @@ depends: [
   "dune" {>= "2.9" & > "2.9"}
   "ocaml" {>= "5.0"}
   "oooapi"
+  "oooapi_lib"
   "ppx_expect" {with-test & = "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}
