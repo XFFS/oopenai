@@ -36,4 +36,6 @@ build: [
 dev-repo: "git+https://github.com/XFFS/oopenai.git"
 pin-depends: [
   [ "oooapi.dev" "git+https://github.com/XFFS/OooapI" ]
+  [ "oooapi_lib.dev" "git+https://github.com/XFFS/OooapI"]
+  [ "openapi_spec.dev" "git+https://github.com/XFFS/OooapI"]
 ]
