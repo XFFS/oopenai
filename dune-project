@@ -30,7 +30,7 @@
 
   ; TODO: Once oooapi is released
   ; Currently included via opam.template file
-  ; oooapi
+  oooapi
 
   (ppx_expect (and :with-test (= v0.15.1)))
   (alcotest :with-test)
