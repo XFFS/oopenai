@@ -11,21 +11,9 @@ bug-reports: "https://github.com/XFFS/oopenai/issues"
 depends: [
   "dune" {>= "2.9" & > "2.9"}
   "ocaml" {>= "5.0"}
-  "cohttp"
-  "cohttp-lwt-unix"
-  "tls"
-  "tls-lwt"
-  "multipart_form" {>= "0.5.0"}
-  "multipart_form-lwt" {>= "0.5.0"}
-  "multipart_form-cohttp-lwt" {>= "0.5.0"}
-  "uuidm"
-  "ppx_deriving"
-  "ppx_deriving_yojson"
   "ppx_expect" {with-test & = "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}
-  "qcheck" {with-test}
-  "qcheck-alcotest" {with-test}
   "odoc" {with-doc}
 ]
 build: [
@@ -45,3 +33,6 @@ build: [
   ["dune" "install" "-p" name "--create-install-files" name]
 ]
 dev-repo: "git+https://github.com/XFFS/oopenai.git"
+pin-depends: [
+  [ "oooapi.dev" "git+https://github.com/XFFS/OooapI" ]
+]
