@@ -16,24 +16,26 @@
   (dune (> 2.9))
   (ocaml (>= 5.0))
 
-  ; cohttp
-  ; cohttp-lwt-unix
-  ; tls
-  ; tls-lwt
-  ; (multipart_form (>= 0.5.0))
-  ; (multipart_form-lwt (>= 0.5.0))
-  ; (multipart_form-cohttp-lwt (>= 0.5.0))
-  ; uuidm
+   ; cohttp
+   ; cohttp-lwt-unix
+   ; tls
+   ; tls-lwt
+   ; (multipart_form (>= 0.5.0))
+   ; (multipart_form-lwt (>= 0.5.0))
+   ; (multipart_form-cohttp-lwt (>= 0.5.0))
+   ; uuidm
 
-  ; ppx_deriving
-  ; ppx_deriving_yojson
+   ; ppx_deriving
+   ; ppx_deriving_yojson
 
-  ; TODO: Once oooapi is released
-  ; Currently included via opam.template file
-  ;  Make a build time only dep
-  oooapi
+   ; TODO: Once oooapi is released
+   ; Currently included via opam.template file
+   ;  Make a build time only dep
+  (oooapi :with-test)           ; Only required for build generation
   oooapi_lib
 
   (ppx_expect (and :with-test (>= v0.15.1)))
   (alcotest :with-test)
-  (alcotest-lwt :with-test)))
+  (alcotest-lwt :with-test)
+  ; Used for formatting generated code
+  (ocamlformat :with-test)))

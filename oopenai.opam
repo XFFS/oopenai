@@ -11,11 +11,12 @@ bug-reports: "https://github.com/XFFS/oopenai/issues"
 depends: [
   "dune" {>= "2.9" & > "2.9"}
   "ocaml" {>= "5.0"}
-  "oooapi"
+  "oooapi" {with-test}
   "oooapi_lib"
   "ppx_expect" {with-test & >= "v0.15.1"}
   "alcotest" {with-test}
   "alcotest-lwt" {with-test}
+  "ocamlformat" {with-test}
   "odoc" {with-doc}
 ]
 build: [
