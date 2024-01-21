@@ -1,0 +1,33 @@
+; Convert the openai YAML spec to JSON
+(rule
+ (target openai-spec.json)
+ (deps (:spec ../openai-openapi/openapi.yaml))
+ (action
+  (with-stdout-to %{target}
+   (with-stdin-from %{spec}
+    (run yq)))))
+
+(rule
+ (alias generate)
+ ; (target oopenai.ml)
+ (deps %{bin:oooapi}
+       (:spec openai-spec.json))
+ (action
+  (progn
+
+   ; Generate the client code
+   (with-stdout-to oopenai.gen.ml
+    (run oooapi %{spec}))
+
+   ; Format the code
+   (run ocamlformat --inplace oopenai.gen.ml)
+
+   ; Move the code into the source tree
+   (diff? oopenai.ml oopenai.gen.ml))))
+
+(library
+ (name oopenai)
+ (modules oopenai)
+ (libraries oooapi_lib)
+ (preprocess (pps ppx_deriving_yojson
+                  ppx_deriving.make)))
