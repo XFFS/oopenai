@@ -1,5 +1,5 @@
-open Oopenai
-open Lwt.Syntax
+module Ooo = Oooapi_lib
+open Lwt_result.Syntax
 
 (* Configure test verbosity *)
 let verbosity : [ `Quiet | `Verbose | `Debug ] =
@@ -9,15 +9,13 @@ let verbosity : [ `Quiet | `Verbose | `Debug ] =
   | "debug" -> `Debug
   | invalid -> failwith ("Invalid test VERBOSITY: " ^ invalid)
 
-module Config : Request.Auth = struct
-  let api_key =
-    Sys.getenv_opt "OPENAI_API_KEY"
-    |> Option.value ~default:"OPENAI_API_KEY not set"
-
-  let org_id = None
+module Config : Ooo.Config = struct
+  let bearer_token = Sys.getenv_opt "OPENAI_API_KEY"
+  let default_headers = None
 end
 
-module API = Open_ai_api.Make (Config)
+module Data = Oopenai.Data
+module API = Oopenai.Make (Ooo.Cohttp_client) (Config)
 
 let free () =
   (* print_endline "freeing all resources"; *)
@@ -31,9 +29,12 @@ let test_lwt (test_case : unit -> bool Lwt.t) switch () =
 let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
   Alcotest_lwt.test_case name `Quick (test_lwt test_case)
 
+let model = "davinci-002"
+
 let list_fine_tune_tests =
   Alcotest_lwt.test_case
-    "can do all them fine tunes - except canceling it, or deleting the fine tuned model"
+    "can do all them fine tunes - except canceling it, or deleting the fine \
+     tuned model"
     (* The cancel fine_tune endpoint succeeds only if the fine tune creation is still pending.
        Therefore it is tested separately. *)
     (* The delete_model endpoint is also tested sperately,
@@ -42,18 +43,21 @@ let list_fine_tune_tests =
     `Quick
     begin
       fun _switch () ->
-        let file = "./test_files/fine_tune.jsonl" in
+        let file = `File "./test_files/fine_tune.jsonl" in
         let purpose = "fine-tune" in
 
         (* Create the file for fine tune. *)
-        let* resp = API.create_file ~file ~purpose in
+        let* resp =
+          API.create_file @@ Data.CreateFileRequest.make ~file ~purpose
+        in
         let file_id = resp.id in
 
+        (* TODO: Seems like this has been removed? *)
         (* Create fine tune. *)
         let create_fine_tune_request_t =
-          Create_fine_tune_request.create file_id
+          Data.CreateFineTuningJobRequest.make ~model ~tra
         in
-        let* resp = API.create_fine_tune ~create_fine_tune_request_t in
+        let* resp = API.create_fine_tuning_job ~create_fine_tune_request_t in
         let fine_tune_id = resp.id in
 
         (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
@@ -116,11 +120,9 @@ let cancel_fine_tune_tests =
         Lwt.return_unit
     end
 
-
 let fine_tune_tests =
   ( "fine tune endpoint tests"
   , [ `Disabled, list_fine_tune_tests; `Disabled, cancel_fine_tune_tests ] )
-
 
 let file_tests =
   Alcotest_lwt.test_case
@@ -151,13 +153,12 @@ let file_tests =
           true
           (List.length resp.data > 0);
 
-        (* Test delete_file *) 
+        (* Test delete_file *)
         let+ resp = API.delete_file ~file_id in
         Alcotest.(check bool) "file is deleted" true resp.deleted
     end
 
 let file_tests = "file endpoint tests", [ `Disabled, file_tests ]
-
 
 let other_endpoint_tests =
   ( "other endpoint tests"
@@ -254,8 +255,8 @@ let other_endpoint_tests =
           end )
     ; ( `Disabled
       , test
-      (* The delete_model endpoint is tested sperately here,
-       since it might take minutes or hours for a fine tuned model to finish processing. *) 
+          (* The delete_model endpoint is tested sperately here,
+             since it might take minutes or hours for a fine tuned model to finish processing. *)
           "can delete_model"
           begin
             fun () ->
@@ -264,9 +265,9 @@ let other_endpoint_tests =
               in
               resp.deleted
           end )
-    ; ( `Disabled 
+    ; ( `Disabled
       , test
-      (* Cannot test without paid account. *)
+          (* Cannot test without paid account. *)
           "can download_file"
           begin
             fun () ->
@@ -300,8 +301,6 @@ let other_endpoint_tests =
           end )
     ] )
 
-
-    
 let filter_out_disabled (suite_name, tests) =
   let filter_enabled =
     match Sys.getenv_opt "RUN_DISABLED" with
