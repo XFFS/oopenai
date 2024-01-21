@@ -7,10 +7,3 @@
             alcotest-lwt
             lwt
             lwt.unix))
-
-(library
- (inline_tests)
- (name multipart_form_test)
- (modules multipart_form_test)
- (libraries oopenai cohttp)
- (preprocess (pps ppx_expect)))
