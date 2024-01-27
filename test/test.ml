@@ -21,6 +21,13 @@ let free () =
   (* print_endline "freeing all resources"; *)
   Lwt.return ()
 
+type request_err =
+  [ `Request of Cohttp.Code.status_code * string
+  | `Deseriaization of string * string
+  ]
+
+type 'a request_result = ('a, request_err) result Lwt.t
+
 (** 
     The generated library's endpoint function always evaluate to a value of type
     [('resp, 'err) result Lwt.t]. Which is a promise for a result which is either,
@@ -29,11 +36,13 @@ let free () =
        responded as expected, or
     - [Error 'err], where ['err] is either a deserialization error or an 
        error response from the server. *)
-let ok_or_fail (res: ('ok, 'err ) result Lwt.t): 'ok Lwt.t =
-  let f v = match v with
+let ok_or_fail (res: 'ok request_result): 'ok Lwt.t =
+  let f v = match (v: ('ok, request_err) result) with
     | Ok ok -> Lwt.return ok
-    (*TODO Add report error message*)
-    | Error _ -> failwith "Expected Okay, but failed"
+    | Error err -> 
+    match err with 
+    | `Request (status_code, message) -> Alcotest.failf "Test failed with request error: status code %s and error message %s" (Cohttp.Code.string_of_status status_code) message
+    | `Deseriaization (data, message) -> Alcotest.failf "Test failed with deseriaization: data %s and error message %s" data message
   in
   Lwt.bind res f
   
@@ -44,6 +53,14 @@ let test_lwt (test_case : unit -> (bool, 'err) result Lwt.t) switch () =
 
 let test name (test_case : unit -> (bool, 'err) result Lwt.t) : unit Alcotest_lwt.test_case =
   Alcotest_lwt.test_case name `Quick (test_lwt test_case)
+
+(** Enrich the error  messga ewith the specific name of the endpoint, used when many tests are grouped together. *)
+let add_endpoint_to_error_message (endpoint:string) result =
+  let prefix = "on endpoint " ^ endpoint ^ " "in
+  result 
+  |> Lwt_result.map_error (function 
+    | `Request (code, msg) -> `Request (code, prefix ^ msg) 
+    | `Deseriaization (data, msg) ->  `Deseriaization (data, prefix ^ msg))
 
 let model = "babbage-002"
 
@@ -66,21 +83,31 @@ let list_fine_tune_tests =
         let result = 
           let create_file_request = 
             Data.CreateFileRequest.make  ~file:(`File file_path) ~purpose in
-          let* resp = API.create_file create_file_request in
+          let* resp = 
+            create_file_request
+            |> API.create_file 
+            |> add_endpoint_to_error_message "create_file"
+          in
           let file_id = resp.id in
 
           (* Create fine tune. *)
           let create_fine_tuning_job_request =
-            Data.CreateFineTuningJobRequest.make ~model ~training_file:file_path ()
+            Data.CreateFineTuningJobRequest.make ~model ~training_file:file_id ()
           in
-          let* resp = API.create_fine_tuning_job create_fine_tuning_job_request in
+          let* resp = 
+            API.create_fine_tuning_job create_fine_tuning_job_request 
+            |> add_endpoint_to_error_message "create_fine_tuning_job"
+          in
           let fine_tune_id = resp.id in
 
           (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
           Unix.sleep 10;
 
           (* Test retrieve_fine_tune. *)
-          let* resp = API.retrieve_fine_tuning_job ~fine_tuning_job_id:fine_tune_id () in
+          let* resp = 
+            API.retrieve_fine_tuning_job ~fine_tuning_job_id:fine_tune_id () 
+            |> add_endpoint_to_error_message "retrieve_fine_tuning_job"
+          in
           Alcotest.(check string) "fine tune id is same" fine_tune_id resp.id;
 
           (* Test list_fine_tunes. *)
@@ -146,7 +173,7 @@ let cancel_fine_tune_tests =
 
 let fine_tune_tests =
   ( "fine tune endpoint tests"
-  , [ `Disabled, list_fine_tune_tests; `Disabled, cancel_fine_tune_tests ] )
+  , [ `Enabled, list_fine_tune_tests; `Disabled, cancel_fine_tune_tests ] )
 
 let file_tests =
   Alcotest_lwt.test_case
@@ -242,9 +269,9 @@ let other_endpoint_tests =
             fun () ->
               let create_image_edit_request = 
                 Data.CreateImageEditRequest.make
-                  ~image:(`File"./test_files/image_edit_original.png")
+                  ~image:(`File "./test_files/image_edit_original.png")
                   ~prompt:"Add a flamingo to the pool"
-                  ~mask:(`File"./test_files/image_edit_mask.png")
+                  ~mask:(`File "./test_files/image_edit_mask.png")
               ()
               in
               let+ resp = API.create_image_edit create_image_edit_request in
@@ -255,8 +282,12 @@ let other_endpoint_tests =
           "can create_image_variation"
           begin
             fun () ->
-              let image = "./test_files/image_edit_original.png" in
-              let+ resp = API.create_image_variation ~image () in
+              let create_image_variation_request = 
+                Data.CreateImageVariationRequest.make 
+                  ~image:(`File "./test_files/image_edit_original.png")
+                  ()
+              in
+              let+ resp = API.create_image_variation create_image_variation_request in
               List.length resp.data > 0
           end )
     ; ( `Disabled
@@ -264,11 +295,12 @@ let other_endpoint_tests =
           "can create_moderation"
           begin
             fun () ->
-              let create_moderation_request_t =
-                Create_moderation_request.create
-                  [ "I want to kill them or give them cake!" ]
+              let create_moderation_request =
+                Data.CreateModerationRequest.make
+                  ~input:"I want to kill them or give them cake!"
+                  ()
               in
-              let+ resp = API.create_moderation ~create_moderation_request_t in
+              let+ resp = API.create_moderation create_moderation_request in
               List.length resp.results != 0
           end )
     ; ( `Disabled
@@ -280,6 +312,7 @@ let other_endpoint_tests =
             fun () ->
               let+ resp =
                 API.delete_model ~model:"curie:ft-synechist-2023-03-22-15-16-01"
+                ()
               in
               resp.deleted
           end )
@@ -291,6 +324,7 @@ let other_endpoint_tests =
             fun () ->
               let+ _ =
                 API.download_file ~file_id:"file-0iKqm72yADJazJ74oROFKx9v"
+                ()
               in
               true
           end )
@@ -299,14 +333,7 @@ let other_endpoint_tests =
           "can list_models"
           begin
             fun () ->
-              let* resp = API.list_models () in
-              let* () = Lwt_io.printl "Model ids:" in
-              let* () =
-                Lwt_list.iter_s
-                  (fun (m : Model.t) -> Lwt_io.printl m.id)
-                  resp.data
-              in
-              let+ () = Lwt_io.(flush stdout) in
+              let+ resp = API.list_models () in
               List.length resp.data > 0
           end )
     ; ( `Disabled
@@ -314,8 +341,8 @@ let other_endpoint_tests =
           "can retrieve_model"
           begin
             fun () ->
-              let+ resp = API.retrieve_model ~model:"text-davinci-003" in
-              String.equal resp.id "text-davinci-003"
+              let+ resp = API.retrieve_model ~model:"gpt-3.5-turbo-instruct" ()in
+              String.equal resp.id "gpt-3.5-turbo-instruct"
           end )
     ] )
 
