@@ -23,11 +23,18 @@ let free () =
 
 let test_lwt (test_case : unit -> bool Lwt.t) switch () =
   Lwt_switch.add_hook (Some switch) free;
-  let+ result = test_case () in
-  Alcotest.(check bool) "should be true" true result
+  let result = test_case () in
+  Lwt.map (Alcotest.(check bool) "should be true" true) result
 
 let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
   Alcotest_lwt.test_case name `Quick (test_lwt test_case)
+
+let ok_or_fail (res: ('a, 'e ) Lwt_result.t): unit Lwt.t =
+  let f v = match v with
+    | Ok _ -> Lwt.return_unit 
+    | Error _ -> failwith "Expected Okay, but failed"
+in
+Lwt.bind res f
 
 let model = "davinci-002"
 
@@ -43,49 +50,50 @@ let list_fine_tune_tests =
     `Quick
     begin
       fun _switch () ->
-        let file = `File "./test_files/fine_tune.jsonl" in
+        let file_path = "./test_files/fine_tune.jsonl" in
         let purpose = "fine-tune" in
 
         (* Create the file for fine tune. *)
-        let* resp =
-          API.create_file @@ Data.CreateFileRequest.make ~file ~purpose
-        in
-        let file_id = resp.id in
+        let result = 
+          let* resp =
+            API.create_file @@ Data.CreateFileRequest.make ~file:(`File file_path) ~purpose
+          in
+          let file_id = resp.id in
 
-        (* TODO: Seems like this has been removed? *)
-        (* Create fine tune. *)
-        let create_fine_tune_request_t =
-          Data.CreateFineTuningJobRequest.make ~model ~tra
-        in
-        let* resp = API.create_fine_tuning_job ~create_fine_tune_request_t in
-        let fine_tune_id = resp.id in
+          (* Create fine tune. *)
+          let create_fine_tune_request =
+            Data.CreateFineTuningJobRequest.make ~model ~training_file:file_path ()
+          in
+          let* resp = API.create_fine_tuning_job create_fine_tune_request in
+          let fine_tune_id = resp.id in
 
-        (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
-        Unix.sleep 10;
+          (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
+          Unix.sleep 10;
 
-        (* Test retrieve_fine_tune. *)
-        let* resp = API.retrieve_fine_tune ~fine_tune_id in
-        Alcotest.(check string) "fine tune id is same" fine_tune_id resp.id;
+          (* Test retrieve_fine_tune. *)
+          let* resp = API.retrieve_fine_tuning_job ~fine_tuning_job_id:fine_tune_id () in
+          Alcotest.(check string) "fine tune id is same" fine_tune_id resp.id;
 
-        (* Test list_fine_tunes. *)
-        let* resp = API.list_fine_tunes () in
-        Alcotest.(check bool)
-          "fine tune id is present"
-          true
-          (List.exists
-             (fun Fine_tune.{ id; _ } -> String.equal fine_tune_id id)
-             resp.data);
+          (* Test list_fine_tunes. *)
+          let* resp = API.list_paginated_fine_tuning_jobs () in
+          Alcotest.(check bool)
+            "fine tune id is present"
+            true
+            (List.exists
+              (fun Data.FineTuningJob.{ id; _ } -> String.equal fine_tune_id id)
+              resp.data);
 
-        (* Test list_fine_tune_events. *)
-        let* resp = API.list_fine_tune_events ~fine_tune_id () in
-        Alcotest.(check bool)
-          "event list is not empty"
-          true
-          (List.length resp.data > 0);
+          (* Test list_fine_tune_events. *)
+          let* resp = API.list_fine_tuning_events ~fine_tuning_job_id:fine_tune_id () in
+          Alcotest.(check bool)
+            "event list is not empty"
+            true
+            (List.length resp.data > 0);
 
-        (* Tear down. *)
-        let* _ = API.delete_file ~file_id in
-        Lwt.return_unit
+          (* Tear down. *)
+          API.delete_file ~file_id ()
+      in
+      ok_or_fail result
     end
 
 let cancel_fine_tune_tests =
