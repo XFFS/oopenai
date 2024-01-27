@@ -21,22 +21,31 @@ let free () =
   (* print_endline "freeing all resources"; *)
   Lwt.return ()
 
-let test_lwt (test_case : unit -> bool Lwt.t) switch () =
+(** 
+    The generated library's endpoint function always evaluate to a value of type
+    [('resp, 'err) result Lwt.t]. Which is a promise for a result which is either,
+    
+    - [Ok 'resp], where ['resp] is the response data returned by the server 
+       responded as expected, or
+    - [Error 'err], where ['err] is either a deserialization error or an 
+       error response from the server. *)
+let ok_or_fail (res: ('ok, 'err ) result Lwt.t): 'ok Lwt.t =
+  let f v = match v with
+    | Ok ok -> Lwt.return ok
+    (*TODO Add report error message*)
+    | Error _ -> failwith "Expected Okay, but failed"
+  in
+  Lwt.bind res f
+  
+let test_lwt (test_case : unit -> (bool, 'err) result Lwt.t) switch () =
   Lwt_switch.add_hook (Some switch) free;
-  let result = test_case () in
+  let result = ok_or_fail (test_case ()) in
   Lwt.map (Alcotest.(check bool) "should be true" true) result
 
-let test name (test_case : unit -> bool Lwt.t) : unit Alcotest_lwt.test_case =
+let test name (test_case : unit -> (bool, 'err) result Lwt.t) : unit Alcotest_lwt.test_case =
   Alcotest_lwt.test_case name `Quick (test_lwt test_case)
 
-let ok_or_fail (res: ('a, 'e ) Lwt_result.t): unit Lwt.t =
-  let f v = match v with
-    | Ok _ -> Lwt.return_unit 
-    | Error _ -> failwith "Expected Okay, but failed"
-in
-Lwt.bind res f
-
-let model = "davinci-002"
+let model = "babbage-002"
 
 let list_fine_tune_tests =
   Alcotest_lwt.test_case
@@ -55,16 +64,16 @@ let list_fine_tune_tests =
 
         (* Create the file for fine tune. *)
         let result = 
-          let* resp =
-            API.create_file @@ Data.CreateFileRequest.make ~file:(`File file_path) ~purpose
-          in
+          let create_file_request = 
+            Data.CreateFileRequest.make  ~file:(`File file_path) ~purpose in
+          let* resp = API.create_file create_file_request in
           let file_id = resp.id in
 
           (* Create fine tune. *)
-          let create_fine_tune_request =
+          let create_fine_tuning_job_request =
             Data.CreateFineTuningJobRequest.make ~model ~training_file:file_path ()
           in
-          let* resp = API.create_fine_tuning_job create_fine_tune_request in
+          let* resp = API.create_fine_tuning_job create_fine_tuning_job_request in
           let fine_tune_id = resp.id in
 
           (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
@@ -91,7 +100,8 @@ let list_fine_tune_tests =
             (List.length resp.data > 0);
 
           (* Tear down. *)
-          API.delete_file ~file_id ()
+          let* _ = API.delete_file ~file_id () in
+          Lwt_result.return ()
       in
       ok_or_fail result
     end
@@ -102,30 +112,36 @@ let cancel_fine_tune_tests =
     `Quick
     begin
       fun _swtich () ->
-        let file = "./test_files/fine_tune.jsonl" in
+        let file_path = "./test_files/fine_tune.jsonl" in
         let purpose = "fine-tune" in
 
+        let result =
         (* Create the file for fine tune. *)
-        let* resp = API.create_file ~file ~purpose in
-        let file_id = resp.id in
+          let create_file_request = 
+            Data.CreateFileRequest.make  ~file:(`File file_path) ~purpose in
+          let* resp = API.create_file create_file_request in
+          let file_id = resp.id in
 
-        (* Create fine tune. *)
-        let create_fine_tune_request_t =
-          Create_fine_tune_request.create file_id
+          (* Create fine tune. *)
+          let create_fine_tuning_job_request =
+            Data.CreateFineTuningJobRequest.make ~model ~training_file:file_path ()
+          in
+          let* resp = API.create_fine_tuning_job create_fine_tuning_job_request in
+          let fine_tune_id = resp.id in
+
+          (* Test cancel fine tune*)
+          let* resp = API.cancel_fine_tuning_job ~fine_tuning_job_id:fine_tune_id () in
+          Alcotest.(check string) "status is cancelled" "cancelled" resp.status;
+
+          (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
+          Unix.sleep 10;
+
+          (* Tear down. *)
+          let _ = API.delete_file ~file_id () in
+          Lwt_result.return ()
         in
-        let* resp = API.create_fine_tune ~create_fine_tune_request_t in
-        let fine_tune_id = resp.id in
+        ok_or_fail result
 
-        (* Test cancel fine tune*)
-        let* resp = API.cancel_fine_tune ~fine_tune_id in
-        Alcotest.(check string) "status is cancelled" "cancelled" resp.status;
-
-        (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
-        Unix.sleep 10;
-
-        (* Tear down. *)
-        let* _ = API.delete_file ~file_id in
-        Lwt.return_unit
     end
 
 let fine_tune_tests =
@@ -139,31 +155,37 @@ let file_tests =
     `Quick
     begin
       fun _swith () ->
-        let file = "./test_files/fine_tune.jsonl" in
+        let file_path = "./test_files/fine_tune.jsonl" in
         (* The only value allowed in purpose is "fine-tune". *)
         let purpose = "fine-tune" in
 
-        (* Create file. *)
-        let* resp = API.create_file ~file ~purpose in
-        let file_id = resp.id in
+        let result = 
+          (* Create file. *)
+          let create_file_request = 
+            Data.CreateFileRequest.make  ~file:(`File file_path) ~purpose in
+          let* resp = API.create_file create_file_request in
+          let file_id = resp.id in
 
-        (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
-        Unix.sleep 10;
+          (* Sleep for 10 sec, otherwise deleting file might fail due to the file is still being processed. *)
+          Unix.sleep 10;
 
-        (* Test retrieve_file *)
-        let* resp = API.retrieve_file ~file_id in
-        Alcotest.(check string) "file id is present" file_id resp.id;
+          (* Test retrieve_file *)
+          let* resp = API.retrieve_file ~file_id () in
+          Alcotest.(check string) "file id is present" file_id resp.id;
 
-        (* Test list_files *)
-        let* resp = API.list_files () in
-        Alcotest.(check bool)
-          "file list is not empty"
-          true
-          (List.length resp.data > 0);
+          (* Test list_files *)
+          let* resp = API.list_files () in
+          Alcotest.(check bool)
+            "file list is not empty"
+            true
+            (List.length resp.data > 0);
 
-        (* Test delete_file *)
-        let+ resp = API.delete_file ~file_id in
-        Alcotest.(check bool) "file is deleted" true resp.deleted
+          (* Test delete_file *)
+          let* resp = API.delete_file ~file_id () in
+          Alcotest.(check bool) "file is deleted" true resp.deleted;
+          Lwt_result.return ()
+        in
+        ok_or_fail result
     end
 
 let file_tests = "file endpoint tests", [ `Disabled, file_tests ]
@@ -175,45 +197,28 @@ let other_endpoint_tests =
           "can create_completion"
           begin
             fun () ->
-              let create_completion_request_t =
-                let req = Create_completion_request.create "ada" in
-                let prompt = Some [ "Give me dogs"; "Give me some cats" ] in
-                let n = Some 5l in
-                { req with prompt; n }
+              let create_completion_request =
+                Data.CreateCompletionRequest.make 
+                  ~model:model 
+                  ~prompt:"Give me dogs"
+                  ~n:5
+                  ()
               in
-              let+ resp = API.create_completion ~create_completion_request_t in
+              let+ resp = API.create_completion create_completion_request in
               List.length resp.choices = 10
-          end )
-    ; ( `Disabled
-      , test
-          "can create_edit"
-          begin
-            fun () ->
-              let create_edit_request_t =
-                let req =
-                  Create_edit_request.create
-                    "text-davinci-edit-001"
-                    "Fix the spelling mistakes"
-                in
-                let input = Some "What day of the wek is it?" in
-                { req with input }
-              in
-              let+ resp = API.create_edit ~create_edit_request_t in
-              match resp.choices with
-              | corrected :: _ ->
-                  corrected.text != Some "What day of the wek is it?"
-              | [] -> false
           end )
     ; ( `Disabled
       , test
           "can create_embedding"
           begin
             fun () ->
-              let create_embedding_request_t =
-                let input = [ "Are cats cool or cooler?" ] in
-                Create_embedding_request.create "text-embedding-ada-002" input
+              let create_embedding_request =
+                Data.CreateEmbeddingRequest.make 
+                  ~model:"text-embedding-ada-002" 
+                  ~input:"Are cats cool or cooler?"
+                  ()
               in
-              let+ resp = API.create_embedding ~create_embedding_request_t in
+              let+ resp = API.create_embedding create_embedding_request in
               List.length resp.data != 0
           end )
     ; ( `Disabled
@@ -221,12 +226,13 @@ let other_endpoint_tests =
           "can create_image"
           begin
             fun () ->
-              let create_image_request_t =
-                Create_image_request.create
-                  "The actor Nicolas Cage standing on a table asking why it \
+              let create_image_request =
+                Data.CreateImageRequest.make
+                  ~prompt:"The actor Nicolas Cage standing on a table asking why it \
                    can be misfiled."
+                   ()
               in
-              let+ resp = API.create_image ~create_image_request_t in
+              let+ resp = API.create_image create_image_request in
               List.length resp.data > 0
           end )
     ; ( `Disabled
@@ -234,10 +240,14 @@ let other_endpoint_tests =
           "can create_image_edit"
           begin
             fun () ->
-              let image = "./test_files/image_edit_original.png" in
-              let prompt = "Add a flamingo to the pool" in
-              let mask = "./test_files/image_edit_mask.png" in
-              let+ resp = API.create_image_edit ~image ~prompt ~mask () in
+              let create_image_edit_request = 
+                Data.CreateImageEditRequest.make
+                  ~image:(`File"./test_files/image_edit_original.png")
+                  ~prompt:"Add a flamingo to the pool"
+                  ~mask:(`File"./test_files/image_edit_mask.png")
+              ()
+              in
+              let+ resp = API.create_image_edit create_image_edit_request in
               List.length resp.data > 0
           end )
     ; ( `Disabled
