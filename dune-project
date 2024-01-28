@@ -11,7 +11,7 @@
 (package
  (name oopenai)
  (synopsis "An OCaml Client Library for the OpenAI API")
- (description "This is an unofficial client library for the [OpenAI API](https://platform.openai.com/docs/api-reference) implemented in OCaml. The library was generated initially by the OCamlClientCodegen code generator for [openapi-generator](https://openapi-generator.tech). However, due to various errors in the code generation, a significant portion of this library was manually implemented.")
+ (description "This is an unofficial client library for the [OpenAI API](https://platform.openai.com/docs/api-reference) implemented in OCaml The library was generated initially by the OCamlClientCodegen code generator for [openapi-generator](https://openapi-generator.tech). However, due to various errors in the code generation, a significant portion of this library was manually implemented.")
  (depends
   (dune (> 2.9))
   (ocaml (>= 5.0))
@@ -34,7 +34,8 @@
   (oooapi :with-test)           ; Only required for build generation
   oooapi_lib
 
-  (ppx_expect (and :with-test (>= v0.15.1)))
+  (bisect_ppx (and :with-test (>= 2.8.3)))
+  (ppx_expect (and :with-test (>= 0.15.1)))
   (alcotest :with-test)
   (alcotest-lwt :with-test)
   ; Used for formatting generated code
