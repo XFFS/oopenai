@@ -30,7 +30,7 @@ let main =
     API.create_completion
     @@ CreateCompletionRequest.make
          ~model:"davinci-002"
-         ~prompt:"Give me dogs and cats"
+         ~prompt:(`String "Give me dogs and cats")
          ~n:5
          ()
   in

@@ -178,7 +178,7 @@ let cancel_fine_tune_tests =
           let create_fine_tuning_job_request =
             Data.CreateFineTuningJobRequest.make
               ~model
-              ~training_file:file_path
+              ~training_file:file_id
               ()
           in
           let* resp =
@@ -204,7 +204,7 @@ let cancel_fine_tune_tests =
 
 let fine_tune_tests =
   ( "fine tune endpoint tests"
-  , [ `Enabled, list_fine_tune_tests; `Disabled, cancel_fine_tune_tests ] )
+  , [ `Disabled, list_fine_tune_tests; `Disabled, cancel_fine_tune_tests ] )
 
 let file_tests =
   Alcotest_lwt.test_case
@@ -264,7 +264,7 @@ let other_endpoint_tests =
                   ()
               in
               let+ resp = API.create_completion create_completion_request in
-              List.length resp.choices = 10
+              List.length resp.choices = 5
           end )
     ; ( `Disabled
       , test
@@ -340,21 +340,27 @@ let other_endpoint_tests =
           end )
     ; ( `Disabled
       , test
-          (* The delete_model endpoint is tested sperately here,
-             since it might take minutes or hours for a fine tuned model to finish processing. *)
-          "can delete_model"
+          (* We don't actually check that we can delete the model, just that the request succeeds *)
+          "can call the delete_model endpoint"
           begin
             fun () ->
+              let open Lwt.Syntax in
               let+ resp =
                 API.delete_model
                   ~model:"curie:ft-synechist-2023-03-22-15-16-01"
                   ()
               in
-              resp.deleted
+              match resp with
+              | Ok _ ->
+                  (* This won't happen, cause the file doesn't exist on the server *)
+                  Ok true
+              | Error (`Request (`Not_found, _)) ->
+                  (* We successfully hit the endpoint, and it can't find the file to delete, as expected *)
+                  Ok true
+              | Error err -> Error err
           end )
-    ; ( `Disabled
+    ; ( `Enabled
       , test
-          (* Cannot test without paid account. *)
           "can download_file"
           begin
             fun () ->

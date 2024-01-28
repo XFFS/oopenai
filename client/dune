@@ -16,18 +16,17 @@
   (progn
 
    ; Generate the client code
-   (with-stdout-to oopenai.gen.ml
+   (with-stdout-to oopenai_gen.gen.ml
     (run oooapi %{spec}))
 
    ; Format the code
-   (run ocamlformat --inplace oopenai.gen.ml)
+   (run ocamlformat --inplace oopenai_gen.gen.ml)
 
    ; Move the code into the source tree
-   (diff? oopenai.ml oopenai.gen.ml))))
+   (diff? oopenai_gen.ml oopenai_gen.gen.ml))))
 
 (library
  (public_name oopenai)
- (modules oopenai)
  (libraries oooapi_lib)
  (preprocess (pps ppx_deriving_yojson
                   ppx_deriving.make))
