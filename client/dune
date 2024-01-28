@@ -26,8 +26,9 @@
    (diff? oopenai.ml oopenai.gen.ml))))
 
 (library
- (name oopenai)
+ (public_name oopenai)
  (modules oopenai)
  (libraries oooapi_lib)
  (preprocess (pps ppx_deriving_yojson
-                  ppx_deriving.make)))
+                  ppx_deriving.make))
+ (instrumentation (backend bisect_ppx)))
