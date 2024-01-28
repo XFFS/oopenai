@@ -21,14 +21,7 @@ let free () =
   (* print_endline "freeing all resources"; *)
   Lwt.return ()
 
-type request_err =
-  [ `Request of Cohttp.Code.status_code * string
-  | `Deseriaization of string * string
-  ]
-
-type 'a request_result = ('a, request_err) result Lwt.t
-
-(** 
+(**
     The generated library's endpoint function always evaluate to a value of type
     [('resp, 'err) result Lwt.t]. Which is a promise for a result which is either,
     
@@ -36,9 +29,9 @@ type 'a request_result = ('a, request_err) result Lwt.t
        responded as expected, or
     - [Error 'err], where ['err] is either a deserialization error or an 
        error response from the server. *)
-let ok_or_fail (res : 'ok request_result) : 'ok Lwt.t =
+let ok_or_fail (res : 'ok API.Client.request_result) : 'ok Lwt.t =
   let f v =
-    match (v : ('ok, request_err) result) with
+    match (v : ('ok, API.Client.request_err) result) with
     | Ok ok -> Lwt.return ok
     | Error err ->
     match err with

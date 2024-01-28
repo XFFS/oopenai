@@ -3,10 +3,8 @@ include Oopenai_gen
 
 module Make (Client : Oooapi_lib.Client) (Config : Oooapi_lib.Config) = struct
   include Make (Client) (Config)
-  module Client = Client (Config)
-  (* TODO Remove after nicer interface is exposed *)
 
-  (* Override to account for inaccuracy in spec:
+  (* Override to account for inaccuracy in OpenAI's OpenAPI spec:
 
      The spec says the media type application/json of type "string",
      but it returns raw, unquoted json data. *)
