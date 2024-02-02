@@ -29,9 +29,9 @@ let free () =
        responded as expected, or
     - [Error 'err], where ['err] is either a deserialization error or an 
        error response from the server. *)
-let ok_or_fail (res : 'ok API.Client.request_result) : 'ok Lwt.t =
+let ok_or_fail (res : 'ok Ooo.Response.t) : 'ok Lwt.t =
   let f v =
-    match (v : ('ok, API.Client.request_err) result) with
+    match (v : ('ok, Ooo.Response.error) result) with
     | Ok ok -> Lwt.return ok
     | Error err ->
     match err with
